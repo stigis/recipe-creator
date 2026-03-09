@@ -37,7 +37,7 @@ class Controller:
         self.view.init_recents_list(recents_list)
         snapshot: dict = self.build_json()
         ModelRecipe.set_snapshot(snapshot)
-        print(f'Snapshot: {snapshot}')
+        logger.debug(f'Snapshot: {snapshot}')
         logger.info(f'CURRENT_DIR in controller.py is: {CURRENT_DIR}')
         logger.info(f'PROGRAMS_DIR is: {PROGRAMS_DIR}')
         logger.info(f'The Website processing script is located at: {WEBSITE_PROCCESING_SCRIPT}')
@@ -45,12 +45,11 @@ class Controller:
 
 
     def main(self):
-        print('in main of controller')
         logger.info('starting main in controller..')
         self.view.main()
 
     def open_file(self, file_path=None):
-        print('ran open_file()')
+        logger.info('ran open_file()')
         if not file_path: # ask for a file
             file_path = filedialog.askopenfilename(
                 title='Choose a Recipe to open',
@@ -70,9 +69,9 @@ class Controller:
 
     # Return True if a file was saved, false otherwise
     def save(self, event=None):
-        print('ran save()')
+        logger.info('ran save()')
         if not self.current_file:
-            print('no current file to save, running save_as()')
+            logger.info('no current file to save, running save_as()')
             return self.save_as()
         else:
             json_data = self.build_json()
@@ -86,7 +85,7 @@ class Controller:
             
     # Return True if a file was saved, false otherwise
     def save_as(self):
-        print('ran save_as()')
+        logger.info('ran save_as()')
         file_path = filedialog.asksaveasfilename(
             title='Save Recipe As',
             filetypes=[('JSON Files', '*.json')]
@@ -95,7 +94,7 @@ class Controller:
             return False
         
         json_data = self.build_json()
-        print(json_data)
+        logger.debug(f'json data to save: {json_data}')
         recipe_model = ModelRecipe(**json_data)
         recipe_model.save_file(file_path)
 
@@ -105,12 +104,8 @@ class Controller:
         return True
 
     def open_chat(self):
-        print('ran open_chat()')
+        logger.info('ran open_chat()')
         self.view.open_chat()
-
-
-    def import_picture(self, event=None):
-        print('ran import_picture()')
 
     def import_image(self):
         """
@@ -118,7 +113,7 @@ class Controller:
         Runs 'recipe_extractor.py' with the image as input to generate a 
         JSON file of the recipe. Then imports that JSON recipe file into the GUI view
         """
-        print('ran import_image()')
+        logger.info('ran import_image()')
         messagebox.showinfo('Import Recipe Picture', 'Select an image file to convert into a recipe.\nThis will consume one API request')
         file_path = filedialog.askopenfilename(
             title='Select an image of a recipe',
@@ -145,17 +140,13 @@ class Controller:
                 return
         # TODO use model to read the data
         json_file_path = os.path.join(IMG_OUTPUT_DIR, output_name)
-        print("the json file generated from the image is: ", json_file_path)
+        logger.info("the json file generated from the image is: ", json_file_path)
 
         recipe_json = ModelRecipe.read_file(json_file_path)
         self.load_json_file(recipe_json, json_file_path)
-        #print('Recipe object...')
-        #print(recipe_json)
-
-
 
     def import_website(self):
-        print('ran import_website()')
+        logger.info('ran import_website()')
         url = self.view.show_url_input_box()
         if not url:
             return
@@ -213,7 +204,7 @@ class Controller:
         """Populate the view with JSON data validated by the Model"""
         view = self.view
         mode = view.menu_bar.get_mode().get()
-        print('mode is: ', mode)
+        logger.info('mode is: ', mode)
         if mode == 'View':
             view.switch_to_edit()
         header = view.header_frame
@@ -238,7 +229,7 @@ class Controller:
         '''
             builds a JSON object from the contents of the view Gui
         '''
-        print('building json...')
+        logger.info('building json...')
         view = self.view
         header = view.header_frame
         title = header.get_title()
@@ -261,7 +252,7 @@ class Controller:
     def compare_to_snapshot(self):
         last_snapshot = ModelRecipe.snapshot
         current_snapshot = self.build_json()
-        #print(f'are the snapshots the same?: {last_snapshot == current_snapshot}')
+        logger.debug(f'are the snapshots the same?: {last_snapshot == current_snapshot}')
         return last_snapshot == current_snapshot
     
     def export_to_mongo(self):
@@ -270,8 +261,8 @@ class Controller:
             return
         payload = self.build_json()
         response = requests.post('http://localhost:5000/api/data', json= payload)
-        print('status is ', response.status_code)
-        print(response)
+        logger.info('status is ', response.status_code)
+        logger.debug(response)
         if response.status_code == 409:
             override = messagebox.askretrycancel(title='Override existing recipe', message='A recipe with this name already exists in the database. Would you like to override it?')
             if override:
@@ -302,6 +293,6 @@ class Controller:
         
 
 if __name__ == '__main__':
-    print('running program from Controller')
+    logger.info('running program from Controller')
     controller = Controller()
     controller.main()
