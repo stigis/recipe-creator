@@ -9,7 +9,6 @@ import customtkinter as ctk
 from tkinter import ttk
 from tkinter import messagebox
 from views.view_menu import MenuBar
-from views.view_scrollable_frame import ScrollableFrameContainer
 from views.view_header_frame import HeaderFrame
 from views.view_ingredients_frame import IngredientsFrame
 from views.view_directions_frame import DirectionsFrame
@@ -32,7 +31,7 @@ class View(ctk.CTk):
         self.geometry('500x500+300-150')
         self.chat_window = None
         #ctk.deactivate_automatic_dpi_awareness() # used for other ctk windows that are created
-        logger.info('the platform is: ', platform.system())
+        logger.info(f'the platform is: {platform.system()}')
         if platform.system() == 'Windows':
             self.after(0, lambda: self.state('zoomed'))
         elif platform.system == 'Linux':
@@ -103,11 +102,11 @@ class View(ctk.CTk):
         dialog = ctk.CTkInputDialog(text='Provide a website url that contains a recipe', title='Import from Website')
         url = dialog.get_input()
         #self.attributes('-alpha', 1.0) # force the root back to opaque
-        print('url is: ', url)
+        logger.info(f'url is: {url}')
         return url
     
     def switch_to_view(self):
-        print('in switch_to_view()')
+        logger.info('in switch_to_view()')
         # disable entry labels in header
         self.header_frame.disable()
         # disable entry labels and remove buttons in ingredients 
@@ -120,6 +119,7 @@ class View(ctk.CTk):
         self.description_frame.description_text.configure(state='disabled')
 
     def switch_to_edit(self):
+        logger.info('in switch_to_edit()')
         self.header_frame.enable()
         self.ingredients_frame.enable_ingredients()
         self.directions_frame.enable_directions()
@@ -167,5 +167,5 @@ class View(ctk.CTk):
 
 
     def main(self):
-        print('in main of view')
+        logger.info('in main of view')
         self.mainloop()

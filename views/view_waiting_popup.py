@@ -1,6 +1,8 @@
 import tkinter as tk
 import customtkinter as ctk
 import threading
+import logging
+logger = logging.getLogger(__name__)
 
 class WaitingPopup(ctk.CTkToplevel):
     def __init__(self, message, operation = None): #*args, fg_color = None, **kwargs):
@@ -15,15 +17,13 @@ class WaitingPopup(ctk.CTkToplevel):
         # center the popup
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
-        #print(f'sw: {screen_width}px, sh: {screen_height}px')
+        logger.debug(f'screen width: {screen_width}px, sscreen height: {screen_height}px')
         center_width = screen_width // 2
         center_height = screen_height // 2
         x_offset = center_width - width // 2
         y_offset = center_height - height // 2
         self.geometry(f"{width}x{height}+{x_offset}+{y_offset}")
-        #width = dialog.cget('width')
-        #height = dialog.cget('height')
-        #print(f'width: {width}px, height: {height}px')
+        logger.debug(f'width: {width}, height: {height}, x_offset: {x_offset}, y_offset: {y_offset}')
 
         self.grab_set() # makes it modal
 

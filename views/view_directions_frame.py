@@ -9,6 +9,8 @@ from tkinter import ttk
 import customtkinter as ctk
 import constants
 import utils
+import logging
+logger = logging.getLogger(__name__)
 
 class DirectionsFrame(ctk.CTkFrame):
 
@@ -39,11 +41,10 @@ class DirectionsFrame(ctk.CTkFrame):
             self._add_direction(index=i, content= f'Step #{i}')
 
     def _on_remove_button_clicked(self, object1):
-        print('remove button clicked')
-        print('Deleteing item...')
+        logger.info('remove button clicked, deleting item...')
         size = len(self.direction_list)
         if size <= 1:
-            print("can't remove last item")
+            logger.info("can't remove last item")
             return
         index = object1['index']
         object1['sub_frame'].destroy()
@@ -51,10 +52,10 @@ class DirectionsFrame(ctk.CTkFrame):
         self._update_indexes(index)
 
     def _on_insert_button_clicked(self, object1):
-        print(f'insert button clicked for {object1}')
+        logger.info(f'insert button clicked for {object1}')
         new_index = object1['index'] + 1
-        print(f'children are...')
-        print(object1['sub_frame'].winfo_children()[0])
+        logger.debug(f'children are...')
+        logger.debug(object1['sub_frame'].winfo_children()[0])
         self._add_direction(index=new_index, insert_after=object1)
         self._update_indexes(new_index + 1)
 
@@ -102,7 +103,7 @@ class DirectionsFrame(ctk.CTkFrame):
     '''
     def _update_indexes(self, starting_index):
         end = len(self.direction_list)
-        print(end)
+        logger.debug(end)
         for i in range(starting_index, end):
             record = self.direction_list[i]
             record['index'] = i
@@ -152,22 +153,22 @@ class DirectionsFrame(ctk.CTkFrame):
 
 
     def _tkr(self, event):
-        #print(self.tb.count("1.0", tk.END, "displaylines"))
+        #logger.info(self.tb.count("1.0", tk.END, "displaylines"))
         #self.tb.search
         f = self.tb.cget('font')
-        print(f.metrics('linespace'))
-        print(f.metrics('descent'))
-        print(f._family)
-        print(f._size)
-        print('border width is: ', self.tb.cget('border_width'))
-        print('border spacing is: ', self.tb.cget('border_spacing'))
-        print(f'highlight thickness is: {self.tb._textbox.cget("highlightthickness")}')
-        print(f'internal pady is: {self.tb._textbox.cget("pady")}')
-        print(self.tb._w)
+        logger.info(f.metrics('linespace'))
+        logger.info(f.metrics('descent'))
+        logger.info(f._family)
+        logger.info(f._size)
+        logger.info('border width is: ', self.tb.cget('border_width'))
+        logger.info('border spacing is: ', self.tb.cget('border_spacing'))
+        logger.info(f'highlight thickness is: {self.tb._textbox.cget("highlightthickness")}')
+        logger.info(f'internal pady is: {self.tb._textbox.cget("pady")}')
+        logger.info(self.tb._w)
         num_lines = self.tb._textbox.count('1.0', 'end', 'update', 'displaylines')
-        print('numlines is: ', num_lines)
-        print('_textbox height is: ', self.tb._textbox.cget('height'))
-        print('ctextbox height is: ', self.tb.cget('height'))
+        logger.info('numlines is: ', num_lines)
+        logger.info('_textbox height is: ', self.tb._textbox.cget('height'))
+        logger.info('ctextbox height is: ', self.tb.cget('height'))
         cuurent_height = self.tb._textbox.cget('height')
         if cuurent_height <= num_lines + 1:
             self.tb._textbox.configure(height= num_lines + 1)
@@ -176,19 +177,19 @@ class DirectionsFrame(ctk.CTkFrame):
 
         #self.tb._textbox.configure(height= num_lines + 1)
 
-        #print(dir(f))
+        #logger.info(dir(f))
         '''
         self.tb = ctk.CTkTextbox(self.directions_container, font= ctk.CTkFont(family='Serif', size=12))
         tb_font = self.tb.cget('font')
         line_height = tb_font.metrics('linespace')
         three_lines = 3 * line_height
-        print(f'three lines is {three_lines} pixels')
-        print(f'border spacing is: {self.tb.cget("border_spacing")}')
+        logger.info(f'three lines is {three_lines} pixels')
+        logger.info(f'border spacing is: {self.tb.cget("border_spacing")}')
         self.tb.configure(height= 1)
         self.tb._textbox.configure(height=2)
         self.tb.update_idletasks()
         self.tb.pack(side='top', padx=10, pady=20, fill='x')
         self.tb.bind('<KeyRelease>', self._tkr)
-        print(f'height is {self.tb.cget("height")}')
+        logger.info(f'height is {self.tb.cget("height")}')
         '''
 

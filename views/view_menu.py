@@ -7,6 +7,8 @@ import tkinter as tk
 import customtkinter as ctk
 from tkinter import font
 from pathlib import Path
+import logging
+logger = logging.getLogger()
 
 class MenuBar(tk.Menu):
     def __init__(self, parent, controller, ctk_window_scaling):
@@ -73,7 +75,7 @@ class MenuBar(tk.Menu):
     
     def switch_mode(self):
         new_mode = self.mode.get()
-        print(f'new_mode is: {new_mode}')
+        logger.info(f'new_mode is: {new_mode}')
         # Expects the parent to be the root view/Frame!
         if new_mode == 'Edit':
             root = self.master
@@ -105,7 +107,7 @@ class MenuBar(tk.Menu):
 
         self.recents_menu.insert_command(index=0, label = display_name, command= lambda file=file : self.controller.open_file(file_path = file))
         num_recents = self.recents_menu.index('end') + 1
-        print(f'number of recent files is {num_recents}')
+        logger.debug(f'number of recent files is {num_recents}')
         if num_recents > max_recents:
             self.recents_menu.delete('end')
 

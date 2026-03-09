@@ -14,6 +14,8 @@ from tkinter import ttk
 import customtkinter as ctk
 import utils
 import constants
+import logging
+logger = logging.getLogger(__name__)
 
 class Node:
     def __init__(self, data):
@@ -130,18 +132,18 @@ class IngredientsFrame(ctk.CTkFrame):
         '''
 
     def _on_remove_button_clicked(self, node):
-        print(f'clicked X button')
-        print(f'size is {len(self.linked_list)}, deleting item...')
+        logger.info(f'clicked X button')
+        logger.info(f'size is {len(self.linked_list)}, deleting item...')
         size = len(self.linked_list)
         if size <= 1:
-            print("can't delete last item")
+            logger.info("can't delete last item")
             return
-        #print(node.data)
+        
         self.linked_list.remove_node(node)
         node.data['sub_frame'].destroy()
     
     def _on_insert_button_clicked(self, node):
-        print('clicked + button')
+        logger.info('clicked + button')
         self._add_ingredient(insert_after_node = node)
 
     def _add_ingredient(self, insert_after_node: Node = None, content: str = 'Ingredient'):
@@ -214,7 +216,7 @@ class IngredientsFrame(ctk.CTkFrame):
             ingredient.configure(state='disabled')
             for widget in sub_frame.winfo_children():
                 if isinstance(widget, (tk.Button, ttk.Button, ctk.CTkButton)):
-                    print('is a button')
+                    logger.debug(' widget is a button')
                     widget.grid_remove() # hide buttons, but remember their configuration
             current_node = next_node
 

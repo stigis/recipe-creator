@@ -5,6 +5,8 @@
 import tkinter as tk
 import customtkinter as ctk
 from tkinter import ttk
+import logging
+logger = logging.getLogger(__name__)
 
 '''
     A CTK textbox that automatically grows and shrinks in size as new characters are typed in.
@@ -23,9 +25,9 @@ class AutoSizingTextbox(ctk.CTkTextbox):
         self.extra_height = extra_height
 
     def _update_height(self, event):
-        print(event)
+        logger.debug(f'event: {event}')
         text_pixel_height = self._textbox.count('1.0', 'end', 'ypixels')
-        print(f'text pixel height is: {text_pixel_height}')
+        logger.debug(f'text pixel height is: {text_pixel_height}')
         if isinstance(text_pixel_height, tuple):
             text_pixel_height = text_pixel_height[0] # if it's a tuple, take the 1st value
         new_height = max(self.min_height, text_pixel_height + self.extra_height)

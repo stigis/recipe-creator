@@ -10,6 +10,8 @@ import time
 import queue
 from recipe_chat import RecipeChat
 from enum import Enum
+import logging
+logger = logging.getLogger(__name__)
 
 class Side(Enum):
     SENT = 0
@@ -62,7 +64,7 @@ class ChatWindow(ctk.CTkToplevel):
         self.chatbot = RecipeChat()
         self.full_send(message= self.chatbot.intro_prompt, init_response_text='Starting AI Chat, Please wait...')
         self._prev_width = self.message_container.cget('width')
-        print(f'prev width is {self._prev_width}')
+        logger.debug(f'prev width is {self._prev_width}')
 
         self.textbox.focus()
 
@@ -144,14 +146,14 @@ class ChatWindow(ctk.CTkToplevel):
     
     def send_to_model(self, message, queue: queue.Queue):
         # This function must be called in a separate thread
-        print(f'inside thread, message is {message}')
-        print('sending message to model')
+        logger.info(f'inside thread, message is {message}')
+        logger.info('sending message to model')
         response = self.chatbot.send_message(message)
-        print(response.text)
+        logger.info(f'Response is: {response.text}')
         #time.sleep(5)
-        print('received response')
+        logger.debug('received response')
         # When the model responds, place the response on the queue
-        print('finishing thread')
+        logger.info('finishing thread')
         queue.put(response.text)
 
     def full_send(self, message, init_response_text='Generating response...', show_sending=False, callback=None):
@@ -167,33 +169,33 @@ class ChatWindow(ctk.CTkToplevel):
         self.after(100, callback)
 
     def on_resize(self, event):
-        print(event)
-        print(event.widget)
+        logger.debug(f'event: {event}')
+        logger.debug(event.widget)
         if event.widget != self.message_container:
-            print(' not the message container, returning')
+            logger.debug(' not the message container, returning')
             return
         changed_size = self._prev_width != event.width
         if changed_size:
             self._prev_width = event.width
             new_message_width = int(event.width * 0.6)
             children = self.message_container.winfo_children()
-            print('children:')
+            logger.debug('children:')
             for child in children: # BFS
-                #print(child)
+                #logger.debug(child)
                 if isinstance(child, ctk.CTkLabel):
-                    print(child)
+                    logger.debug(child)
                     child.configure(wraplength = new_message_width)
                 children.extend(child.winfo_children())
-        print('Did the window change size? ', 'Yes' if changed_size else 'No')
+        logger.debug(f'Did the window change size? {"Yes" if changed_size else "No"}')
         
-        #print(f'children are:\n{event.widget.winfo_children()}')
+        #logger.debug(f'children are:\n{event.widget.winfo_children()}')
         '''
         children = self.message_container.winfo_children()
-        print('children:')
+        logger.debug('children:')
         for child in children: # BFS
-            #print(child)
+            #logger.debug(child)
             if isinstance(child, ctk.CTkLabel):
-                print(child)
+                logger.debug(child)
                 #child.configure(wraplength = message_width)
             children.extend(child.winfo_children())
         '''
