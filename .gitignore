@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.py[cod]
+*.log
+programs/output/img/*
+programs/output/website/*
+
+# Do NOT ignore the .gitkeep file
+# !programs/output/img/.gitkeep
