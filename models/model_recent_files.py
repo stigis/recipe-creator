@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 import re
+import logging
+logger = logging.getLogger(__name__)
 
 class RecentFileManager():
     MAX = 10
@@ -21,14 +23,14 @@ class RecentFileManager():
 
     def load_recents(self):
         if not os.path.exists(self.recent_filepath):
-            print('no recents file to load')
+            logger.info('no recents file to load')
             return []
         try:
             with open(self.recent_filepath, 'r') as recents_file:
                 recently_used = json.load(recents_file)
                 return recently_used
         except json.JSONDecodeError:
-            print('error doing json decode on recents file')
+            logger.error('error doing json decode on recents file')
             return []
 
     def add_file(self, filename):

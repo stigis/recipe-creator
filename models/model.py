@@ -8,6 +8,8 @@ from typing import List, Optional, ClassVar
 import json
 import re
 from models.model_recent_files import RecentFileManager
+import logging
+logger = logging.getLogger(__name__)
 
 # Define the JSON schema using Pydantic
 class ModelRecipe(BaseModel):
@@ -22,19 +24,19 @@ class ModelRecipe(BaseModel):
     description: Optional[str] = Field(description="Any longer description that is provided in the recipe")
 
     def save_file(self, filepath: str):
-        print(f'saving to {filepath}')
+        logger.info(f'saving to {filepath}')
         json_string: str = self.model_dump_json(by_alias=True, indent=4)
         with open(filepath, 'w', encoding='utf-8') as json_file:
             json_file.write(json_string)
 
         ModelRecipe.recent_file_manager.add_file(filepath)
-        print(f'saved file {filepath}')
+        logger.info(f'saved file {filepath}')
 
     @staticmethod
     def read_file(filepath: str):
         with open(filepath, 'r', encoding='utf-8') as json_file:
             json_object = json.load(json_file)
-        print(json_object)
+        logger.debug(f'Loaded json object from file: {json_object}')
         ModelRecipe(**json_object) # validate schema of the file
         ModelRecipe.recent_file_manager.add_file(filepath)
         return json_object
@@ -43,9 +45,8 @@ class ModelRecipe(BaseModel):
     def read_json_str(recipe_json_str: str) -> (dict):
         match: re.Match = re.search(r"\{.*\}", recipe_json_str, re.DOTALL)
         if not match:
-            print('Error: input string did not contain a JSON object')
-            print('Input String:')
-            print(recipe_json_str)
+            logger.error('Error: input string did not contain a JSON object')
+            logger.error(f'Input String: {recipe_json_str}')
             return None
         
         json_str = match.group(0)
