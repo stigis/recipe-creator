@@ -23,6 +23,9 @@ class HeaderFrame(ctk.CTkFrame):
         self._make_image_component()
         self._make_time_component()
         self._make_serving_component()
+    
+        logger.info(f'entry scaling is: {ctk.ScalingTracker.get_widget_scaling(self.time_value)}')
+        logger.info(f'header frame scaling is: {ctk.ScalingTracker.get_widget_scaling(self)}')
         
     
     def _make_title_entry(self):
@@ -69,34 +72,50 @@ class HeaderFrame(ctk.CTkFrame):
 
     # Used to expand and shrink the entry widget for time as the user adds and removes text
     def on_time_entry_key_released(self, event):
-        logger.debug('Event triggered: ', event)
+        logger.debug(f'Event triggered: {event}')
         entry = event.widget.master # to get the ctk widget
         text = entry.get()
+        entry_scaling = ctk.ScalingTracker.get_widget_scaling(entry)
         #logger.debug(f'measure is {self.time_value._font.measure(text)}')
-        new_width = entry._font.measure(text) + 20
+        # must scale the font text and minimum entry width, but all other measurements are already scaled
+        new_width = int((entry._font.measure(text) + 40) * entry_scaling)
         end_x = entry.winfo_x() + new_width
-        midpoint = entry.master.winfo_width() // 2
+        #midpoint = entry.master.winfo_width() // 2
+        logger.debug(f'entry start point is: {entry.winfo_x()}, frame start point is: {self.winfo_x()}')
+        midpoint = self.winfo_width() // 2
         logger.debug(f'the midpoint is {midpoint}, the entry would end at {end_x}. New width would be {new_width}')
-        if new_width >= self.min_entry_width and end_x <= midpoint:
-            entry.configure(width=new_width)
+        min_entry_width_scaled = int(self.min_entry_width * entry_scaling)
+        if new_width >= min_entry_width_scaled and end_x <= midpoint:
+            # we remove the scaling here because it will be applied again when using configure()
+            entry.configure(width= new_width // entry_scaling)
+        # triggered when a lot of text is deleted at once
+        # if the actual width is large, but the required width is less then min_width, reset the width to min_width
+        elif new_width < min_entry_width_scaled and entry.winfo_x() + entry.winfo_width() > min_entry_width_scaled:
+             entry.configure(width= self.min_entry_width)
 
     # makes the servings entry box grow. calculations are a little different from the
     # time entry, because the server entry field grows backwards, and the 'Serves' label will 
     # cross the midpoint first
     def on_serving_entry_key_released(self, event):
-        logger.debug('Event triggered: ', event)
+        logger.debug(f'Event triggered: {event}')
         entry = event.widget.master # to get the ctk widget
         text = entry.get()
         current_width = entry.winfo_width()
-        new_width = entry._font.measure(text) + 20
+        entry_scaling = ctk.ScalingTracker.get_widget_scaling(entry)
+        new_width = int((entry._font.measure(text) + 40) * entry_scaling)
         current_start_x = entry.winfo_x()
         width_diff = new_width - current_width
         new_start_x = current_start_x - width_diff
-        midpoint = entry.master.winfo_width() // 2
+        midpoint = self.winfo_width() // 2
         breakpoint = midpoint + self.serve_label.winfo_width()
         logger.debug(f'the midpoint is {midpoint}, current_start_x is {current_start_x}. New width would be {new_width}, new_start_x would be {new_start_x}')
-        if new_width >= self.min_entry_width and new_start_x > breakpoint:
-            entry.configure(width = new_width)
+        min_entry_width_scaled = int(self.min_entry_width * entry_scaling)
+        if new_width >= min_entry_width_scaled and new_start_x > breakpoint:
+            entry.configure(width = new_width // entry_scaling)
+        # triggered when a lot of text is deleted at once
+        # if the actual width is large, but the required width is less then min_width, reset the width to min_width
+        elif new_width < min_entry_width_scaled and entry.winfo_x() + entry.winfo_width() > min_entry_width_scaled:
+            entry.configure(width = self.min_entry_width)
 
     def on_img_button_clicked(self):
         img_file = filedialog.askopenfilename(

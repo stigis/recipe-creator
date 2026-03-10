@@ -28,8 +28,9 @@ class View(ctk.CTk):
         super().__init__()
         self.controller = controller
         self.title('Recipe Viewer')
-        self.geometry('500x500+300-150')
+        self.geometry('500x500+300+100')
         self.chat_window = None
+        logger.info(f'ctk window scaling is: {ctk.ScalingTracker.get_window_scaling(self)}')
         #ctk.deactivate_automatic_dpi_awareness() # used for other ctk windows that are created
         logger.info(f'the platform is: {platform.system()}')
         if platform.system() == 'Windows':
@@ -54,10 +55,13 @@ class View(ctk.CTk):
 
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
+        self.update()
+        logger.info(f'screen width: {self.winfo_screenwidth()}, screen height: {self.winfo_screenheight()}')
+        logger.info(f'root width (scaled) is {self.winfo_width()}, root height (scaled) is: {self.winfo_height()}')
 
     def _make_menu_bar(self):
         self.option_add('*tearOff', False)
-        self.menu_bar = MenuBar(self, self.controller, self._get_window_scaling())
+        self.menu_bar = MenuBar(self, self.controller)
         self.config(menu= self.menu_bar)
 
     def _make_menu_bindings(self):

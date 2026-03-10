@@ -27,10 +27,16 @@ class AutoSizingTextbox(ctk.CTkTextbox):
     def _update_height(self, event):
         logger.debug(f'event: {event}')
         text_pixel_height = self._textbox.count('1.0', 'end', 'ypixels')
-        logger.debug(f'text pixel height is: {text_pixel_height}')
+        scaling = ctk.ScalingTracker.get_widget_scaling(self._textbox)
+        logger.debug(f'text pixel height is: {text_pixel_height}, scaling is: {scaling}')
         if isinstance(text_pixel_height, tuple):
             text_pixel_height = text_pixel_height[0] # if it's a tuple, take the 1st value
-        new_height = max(self.min_height, text_pixel_height + self.extra_height)
+        '''
+            Since text_pixel_height is scaled by ctk, but min_height and extra_height are not,
+            and a descaled value is needed for configure(), remove the scaling from text_pixel_height
+        '''
+        unscaled_height = text_pixel_height // scaling
+        new_height = max(self.min_height, unscaled_height + self.extra_height)
         self.configure(height = new_height)
         
         

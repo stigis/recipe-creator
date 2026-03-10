@@ -11,9 +11,10 @@ import logging
 logger = logging.getLogger()
 
 class MenuBar(tk.Menu):
-    def __init__(self, parent, controller, ctk_window_scaling):
+    def __init__(self, parent, controller):
         super().__init__(parent)
         menu_font = font.nametofont('TkMenuFont')
+        ctk_window_scaling = ctk.ScalingTracker.get_window_scaling(parent)
         #font_family = menu_font.actual('family')
         font_size = int(11 * ctk_window_scaling)
         menu_font.configure(size= font_size)
