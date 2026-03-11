@@ -4,6 +4,7 @@ Docstring for img_recipe_extractor.gui.v3.view_header_frame
 header frame that contains th titlle label, time, and serving field
 '''
 import tkinter as tk
+from tkinter import messagebox
 import customtkinter as ctk
 import constants
 from tkinter import filedialog
@@ -14,11 +15,12 @@ logger = logging.getLogger(__name__)
 class HeaderFrame(ctk.CTkFrame):
     HEADER_BACKGROUND = constants.Color.MUTED_SAGE.value
 
-    def __init__(self, parent):
+    def __init__(self, parent, controller):
         super().__init__(parent, fg_color=self.HEADER_BACKGROUND)
         self.pack(padx=15, pady=15, fill='x', ipady=25)
         self.image_label = None
         self.min_entry_width = 175
+        self.controller = controller 
         self._make_title_entry()
         self._make_image_component()
         self._make_time_component()
@@ -67,8 +69,10 @@ class HeaderFrame(ctk.CTkFrame):
     def _make_image_component(self):
         self.img_frame = ctk.CTkFrame(self, fg_color=self.HEADER_BACKGROUND)
         self.img_frame.pack(side='top', fill='x')
-        self.image_button = ctk.CTkButton(self.img_frame, text='Upload Image', command= self.on_img_button_clicked)
+        self.image_button = ctk.CTkButton(self.img_frame, text='Upload Image', command= self.on_img_button_clicked, fg_color='#4F7942', text_color='#FFFFFF')
         self.image_button.pack(side='top')
+        self.update()
+        logger.debug(f'img frame width is {self.img_frame.winfo_width()}')
 
     # Used to expand and shrink the entry widget for time as the user adds and removes text
     def on_time_entry_key_released(self, event):
@@ -125,21 +129,33 @@ class HeaderFrame(ctk.CTkFrame):
         logger.info(f'the file you chose was: {img_file}')
         if not img_file:
             return
-        
-        if self.image_label: # if it already exists
-            self.image_label.destroy()
 
         original_img = Image.open(img_file)
-        #resized_img = original_img.resize((200, 200)) # optional resize
+        self.display_image(original_img)
+        self.controller.set_temp_img_path(img_file)
+
+    def display_image(self, image):
+        if self.image_label: # if an image is already being diplayed
+            self.image_label.destroy()
+
+        original_width, original_height = image.size
+        frame_width = self.img_frame.winfo_width()
+        if original_width > frame_width:
+            logger.info(f'Scaling image. Image width is {original_width}, but frame width is {frame_width}')
+            # Will always be a fraction < 1, because the image's width (original width) is bigger
+            # Ex: If the image is twice as wide as the frame, the ratio will be 0.5, and the image's width will be halved, allowing it to fit in the frame
+            ratio = frame_width / original_width 
+            original_width = original_width * ratio
+            original_height = original_width * ratio
+        resized = image.resize((int(original_width), int(original_height)), Image.LANCZOS)
         #tk_img = ImageTk.PhotoImage(resized_img)
+        scaling = ctk.ScalingTracker.get_widget_scaling(self)
         logger.debug(f'img_frame width is {self.img_frame.winfo_width()}')
         logger.debug(f'img_frame height is {self.img_frame.winfo_reqheight()}')
-        ctk_img = ctk.CTkImage(original_img, size=(500, 500))
+        ctk_img = ctk.CTkImage(resized, size=(resized.width // scaling, resized.height // scaling))
         self.image_label = ctk.CTkLabel(self.img_frame, image=ctk_img, text='')
-        #ctk.CTkImage()
         self.image_label.pack(side='top', padx= 20, pady=10, fill='x', expand=True)
 
-        
 
 
     def get_title(self):
@@ -162,6 +178,12 @@ class HeaderFrame(ctk.CTkFrame):
     def set_serving(self, serving):
         self.serve_value.delete('0', 'end')
         self.serve_value.insert('end', serving)
+
+    def set_image(self, image: Image):
+        self.display_image(image)
+        
+    def show_img_error(self):
+        messagebox.showerror(title='Image Error', message='The image of the dish could not be loaded. See logs for more details')
 
     def disable(self):        
         self.title_entry.configure(state='disabled')

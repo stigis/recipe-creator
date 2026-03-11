@@ -75,7 +75,7 @@ class View(ctk.CTk):
         self.scrollable_frame = ScrollableFrame(self)
 
     def _make_header_frame(self):
-        self.header_frame = HeaderFrame(self.scrollable_frame) #tk.Frame(self.scrollable_frame, width=300, bg='green')
+        self.header_frame = HeaderFrame(self.scrollable_frame, self.controller) #tk.Frame(self.scrollable_frame, width=300, bg='green')
 
     def _make_ingredients_frame(self):
         self.ingredients_frame = IngredientsFrame(self.scrollable_frame)

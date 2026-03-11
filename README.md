@@ -7,6 +7,6 @@
 - Chat with AI to develop a recipe and save the result
 - Build your own recipe from scratch without AI, or edit a recipe created with AI
 
-Recipes are saved as *.json* files
+Recipes are saved as `.json` files
 
 Requires an *API KEY* from **Google AI Studio**

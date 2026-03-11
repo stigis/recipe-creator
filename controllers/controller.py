@@ -33,6 +33,8 @@ class Controller:
         #self.model = Model()
         self.view = View(self)
         self.current_file = None
+        self.temp_image_path = None
+        self.current_image_path = None
         recents_list = ModelRecipe.recent_file_manager.recent_files
         self.view.init_recents_list(recents_list)
         snapshot: dict = self.build_json()
@@ -76,10 +78,14 @@ class Controller:
         else:
             json_data = self.build_json()
             recipe_model = ModelRecipe(**json_data)
-            recipe_model.save_file(self.current_file)
+            recipe_model.save_file(self.current_file, self.temp_image_path)
             
             self.view.status_bar.configure(text=f'Saved {self.get_basename(self.current_file)}   ')
-            ModelRecipe.set_snapshot(json_data)
+            #ModelRecipe.set_snapshot(json_data)
+            ModelRecipe.set_snapshot(recipe_model.model_dump(by_alias=True))
+            if recipe_model.image_ref:
+                self.current_image_path = recipe_model.image_ref
+            self.set_temp_img_path(None) # image has been saved, reset
             return True
 
             
@@ -96,11 +102,16 @@ class Controller:
         json_data = self.build_json()
         logger.debug(f'json data to save: {json_data}')
         recipe_model = ModelRecipe(**json_data)
-        recipe_model.save_file(file_path)
+        recipe_model.save_file(file_path, self.temp_image_path)
+        if recipe_model.image_ref:
+            self.current_image_path = recipe_model.image_ref
+
 
         self.current_file = file_path
         self.view.status_bar.configure(text=f'Saved {self.get_basename(self.current_file)}   ')
-        ModelRecipe.set_snapshot(json_data)
+        #ModelRecipe.set_snapshot(json_data)
+        ModelRecipe.set_snapshot(recipe_model.model_dump(by_alias=True))
+        self.set_temp_img_path(None) # image has been saved, reset
         return True
 
     def open_chat(self):
@@ -204,13 +215,20 @@ class Controller:
         """Populate the view with JSON data validated by the Model"""
         view = self.view
         mode = view.menu_bar.get_mode().get()
-        logger.info('mode is: ', mode)
+        logger.info(f'mode is: {mode}')
         if mode == 'View':
             view.switch_to_edit()
         header = view.header_frame
         header.set_title(recipe_json['title'])
         header.set_time(recipe_json['time'] or "")
         header.set_serving(recipe_json['serving size'] or "")
+        if recipe_json["image ref"]:
+            self.current_image_path = recipe_json["image ref"]
+            image = ModelRecipe.get_image(self.current_image_path)
+            if image:
+                header.set_image(image)
+            else:
+                header.show_img_error()
         view.ingredients_frame.set_ingredients(recipe_json['ingredients'])
         view.directions_frame.set_directions(recipe_json['directions'])
         view.description_frame.set_description(recipe_json['description'] or "")
@@ -238,6 +256,7 @@ class Controller:
         ingredients = view.ingredients_frame.get_ingredients()
         directions = view.directions_frame.get_directions()
         description = view.description_frame.get_description()
+        image_ref = self.current_image_path
        
         recipe_json = {
             'title': title,
@@ -245,7 +264,8 @@ class Controller:
             'serving size': serving,
             'ingredients': ingredients,
             'directions': directions,
-            'description': description
+            'description': description,
+            'image ref': image_ref
         }
         return recipe_json
     
@@ -255,13 +275,17 @@ class Controller:
         logger.debug(f'are the snapshots the same?: {last_snapshot == current_snapshot}')
         return last_snapshot == current_snapshot
     
+    def set_temp_img_path(self, img_path):
+        self.temp_image_path = img_path
+        logger.info(f'temp image path is: {img_path}, the image will not be copied and saved until the recipe is saved')
+        
     def export_to_mongo(self):
         result = messagebox.askyesno(title='Export to Database', message='Are you sure you want to add this Recipe to the database?')
         if not result:
             return
         payload = self.build_json()
         response = requests.post('http://localhost:5000/api/data', json= payload)
-        logger.info('status is ', response.status_code)
+        logger.info(f'status is: {response.status_code}')
         logger.debug(response)
         if response.status_code == 409:
             override = messagebox.askretrycancel(title='Override existing recipe', message='A recipe with this name already exists in the database. Would you like to override it?')

@@ -119,7 +119,7 @@ class IngredientsFrame(ctk.CTkFrame):
         # each node in the list contains a subframe that contains an individual ingredient
         self.linked_list = LinkedList() 
         for i in range(3):
-            self._add_ingredient(content = f'Ingredient #{i}')
+            self._add_ingredient(content = f'Ingredient #{i}', use_placeholder=True)
         '''
         grid container - Frame , gridcolumnconfigure
             ingredient.grid()
@@ -146,7 +146,7 @@ class IngredientsFrame(ctk.CTkFrame):
         logger.info('clicked + button')
         self._add_ingredient(insert_after_node = node)
 
-    def _add_ingredient(self, insert_after_node: Node = None, content: str = 'Ingredient'):
+    def _add_ingredient(self, insert_after_node: Node = None, content: str = 'Ingredient', use_placeholder: bool = False):
         prev_frame = None
         if insert_after_node:
             prev_frame = insert_after_node.data['sub_frame']
@@ -159,7 +159,11 @@ class IngredientsFrame(ctk.CTkFrame):
         i_label = ctk.CTkLabel(sub_frame, text='\u2022', font= self.list_marker_font)
         i_label.grid(row=0, column=0, sticky='e')
         #ingredient = ttk.Entry(sub_frame, font = constants.SMALL_FONT, style='Ingredient.TEntry')
-        ingredient = ctk.CTkEntry(sub_frame, placeholder_text= content, font=constants.CTK_SMALL_FONT, fg_color=constants.Color.LIGHT_GRAYISH_BLUE.value)
+        ingredient = ctk.CTkEntry(sub_frame, font=constants.CTK_SMALL_FONT, fg_color=constants.Color.LIGHT_GRAYISH_BLUE.value)
+        if use_placeholder:
+            ingredient.configure(placeholder_text= content)
+        else:
+            ingredient.insert('end', content)
         ingredient.grid(row=0, column=1, sticky='ew', padx=10)
         #minus_b = ttk.Button(sub_frame, text='x', width=2, style='Remove.TButton')
         minus_b = ctk.CTkButton(sub_frame, **constants.CTK_REMOVE_BUTTON)

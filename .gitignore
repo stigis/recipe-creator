@@ -4,6 +4,7 @@ __pycache__/
 *.log
 programs/output/img/*
 programs/output/website/*
+images/*
 
 # Do NOT ignore the .gitkeep file
 # !programs/output/img/.gitkeep
