@@ -21,6 +21,7 @@ class MenuBar(tk.Menu):
         #self.scaled_font = (font_family, font_size)
         parent.option_add('*Menu.Font', menu_font)
         self.controller = controller
+        self.api_key_controller = self.controller.api_key_controller
         self.mode = tk.StringVar()
         self.mode.set('Edit')
         self.menu_font = menu_font
@@ -31,6 +32,9 @@ class MenuBar(tk.Menu):
 
         self.file_menu = self._make_file_menu()
         self.mode_menu = self._make_mode_menu()
+        self.api_key_menu = self._make_api_key_menu()
+        
+
         #self.chat_menu = self._make_chat_menu()
         #font.names
         
@@ -39,6 +43,7 @@ class MenuBar(tk.Menu):
         #self.add_cascade(label='Chat', menu=)
         self.add_command(label='Chat', command= self.controller.open_chat)
         self.add_command(label='Export', command= self.controller.export_to_mongo)
+        self.add_cascade(label='API Key', menu= self.api_key_menu)
 
     def _make_file_menu(self):
         file_menu = tk.Menu(self)
@@ -69,6 +74,12 @@ class MenuBar(tk.Menu):
     def _make_chat_menu(self):
         chat_menu =  tk.Menu(self)
         return chat_menu
+    
+    def _make_api_key_menu(self):
+        api_key_menu = tk.Menu(self)
+        api_key_menu.add_command(label='Set/Test API Key', command= self.api_key_controller.open_view)
+        api_key_menu.add_command(label='Help', command= self.api_key_controller.get_help)
+        return api_key_menu
     
     # return the stringvar for use elsewhere
     def get_mode(self):

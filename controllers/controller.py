@@ -14,6 +14,8 @@ import os.path
 import subprocess
 import requests
 import threading
+from controllers.api_key_controller import APIKeyController
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,11 @@ IMG_JSON_OUTPUT_NAME = os.path.join(PROGRAMS_DIR, "output", "img", "output_filen
 class Controller:
     def __init__(self):
         #self.model = Model()
+        # create other controllers first since the views reference on them. Avoid null pointer exceptions
+        self.api_key_controller = APIKeyController()
         self.view = View(self)
+        self.api_key_controller.set_view(self.view) # set here to avoid a Null pointer exception
+        
         self.current_file = None
         self.temp_image_path = None
         self.current_image_path = None
@@ -39,6 +45,8 @@ class Controller:
         self.view.init_recents_list(recents_list)
         snapshot: dict = self.build_json()
         ModelRecipe.set_snapshot(snapshot)
+
+
         logger.debug(f'Snapshot: {snapshot}')
         logger.info(f'CURRENT_DIR in controller.py is: {CURRENT_DIR}')
         logger.info(f'PROGRAMS_DIR is: {PROGRAMS_DIR}')
