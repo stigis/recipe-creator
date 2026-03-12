@@ -37,7 +37,8 @@ class Controller:
         self.api_key_controller = APIKeyController()
         self.view = View(self)
         self.api_key_controller.set_view(self.view) # set here to avoid a Null pointer exception
-        
+        self.api_key_controller.check_api_key()
+
         self.current_file = None
         self.temp_image_path = None
         self.current_image_path = None

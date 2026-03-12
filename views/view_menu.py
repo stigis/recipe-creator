@@ -96,6 +96,14 @@ class MenuBar(tk.Menu):
             root = self.master
             root.switch_to_view()
 
+    def disable_ai_buttons(self):
+        self.file_menu.entryconfig('Import', state='disabled')
+        self.entryconfig('Chat', state='disabled')
+
+    def enable_ai_buttons(self):
+        self.file_menu.entryconfig('Import', state='normal')
+        self.entryconfig('Chat', state='normal')
+
     def init_recents_list(self, recents_list):
         self.recents_menu = tk.Menu(self)
         for file_path in recents_list:

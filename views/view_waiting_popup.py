@@ -17,7 +17,7 @@ class WaitingPopup(ctk.CTkToplevel):
         # center the popup
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
-        logger.debug(f'screen width: {screen_width}px, sscreen height: {screen_height}px')
+        logger.debug(f'screen width: {screen_width}px, screen height: {screen_height}px')
         center_width = screen_width // 2
         center_height = screen_height // 2
         x_offset = center_width - width // 2

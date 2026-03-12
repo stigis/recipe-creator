@@ -169,6 +169,12 @@ class View(ctk.CTk):
     def finish_popup_progress(self):
         self.popup.finish_progress()
 
+    def disable_ai(self):
+        # disable menu buttons that send API requests to an AI
+        self.menu_bar.disable_ai_buttons()
+
+    def enable_ai(self):
+        self.menu_bar.enable_ai_buttons()
 
     def main(self):
         logger.info('in main of view')

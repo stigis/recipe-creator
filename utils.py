@@ -38,6 +38,22 @@ class AutoSizingTextbox(ctk.CTkTextbox):
         unscaled_height = text_pixel_height // scaling
         new_height = max(self.min_height, unscaled_height + self.extra_height)
         self.configure(height = new_height)
+
+def center_toplevel(toplevel: ctk.CTkToplevel, width: int, height: int):
+    screen_width = toplevel.winfo_screenwidth()
+    screen_height = toplevel.winfo_screenheight()
+    logger.debug(f'screen width: {screen_width}px, screen height: {screen_height}px')
+    scaling = toplevel._get_window_scaling()
+
+    center_width = screen_width // 2
+    center_height = screen_height // 2
+    x_offset = int( (center_width - (width // 2) ) * scaling) 
+    y_offset = int( (center_height - (height // 2) ) * scaling)
+    logger.debug(f'width: {width}, height: {height}, x_offset: {x_offset}, y_offset: {y_offset}')
+    toplevel.geometry(f"{width}x{height}+{x_offset}+{y_offset}")
+
+
+
         
         
 
