@@ -9,4 +9,4 @@
 
 Recipes are saved as `.json` files
 
-Requires an *API KEY* from **Google AI Studio**
+Requires an *API KEY* from **Google AI Studio**. You can set your API Key via the menu
