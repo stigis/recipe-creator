@@ -11,24 +11,39 @@ from tkinter import messagebox
 import customtkinter as ctk
 import utils
 import os.path
+from pathlib import Path
+import sys
 import subprocess
 import requests
 import threading
 from controllers.api_key_controller import APIKeyController
 
+import programs.img_recipe_extractor
+import programs.extract_recipe_from_website
+
 import logging
 logger = logging.getLogger(__name__)
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__)) # the directory containing this file
-# get the parent directory that contains this file
-PARENT_DIR = os.path.dirname(CURRENT_DIR)
-PROGRAMS_DIR = os.path.join(PARENT_DIR, "programs")
-WEBSITE_PROCCESING_SCRIPT = os.path.join(PROGRAMS_DIR, "extract_recipe_from_website.py")
-WEBSITE_JSON_OUTPUT_NAME = os.path.join(PROGRAMS_DIR, "output", "website", "gemma_output.json")
+if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+    # running from a bundle in pyinstaller
+    ROOT_DIR = Path(sys._MEIPASS).resolve().parent
+else:
+    # running locally in python script
+    ROOT_DIR = Path(__file__).resolve().parent.parent
 
-IMG_PROCESSING_SCRIPT = os.path.join(PROGRAMS_DIR, "img_recipe_extractor.py")
-IMG_OUTPUT_DIR = os.path.join(PROGRAMS_DIR, "output", "img")
-IMG_JSON_OUTPUT_NAME = os.path.join(PROGRAMS_DIR, "output", "img", "output_filename.txt") 
+#CURRENT_DIR = os.path.dirname(os.path.abspath(__file__)) # the directory containing this file
+# get the parent directory that contains this file
+#PARENT_DIR = os.path.dirname(CURRENT_DIR)
+#PROGRAMS_DIR = ROOT_DIR / 'programs' #os.path.join(PARENT_DIR, "programs")
+#WEBSITE_PROCCESING_SCRIPT = PROGRAMS_DIR / 'extract_recipe_from_website.py' #os.path.join(PROGRAMS_DIR, "extract_recipe_from_website.py")
+WEBSITE_OUTPUT_DIR = ROOT_DIR / 'output' / 'website'
+WEBSITE_JSON_OUTPUT_NAME =  ROOT_DIR / 'output' / 'website' / 'gemma_output.json' #os.path.join(PROGRAMS_DIR, "output", "website", "gemma_output.json")
+WEBSITE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+#IMG_PROCESSING_SCRIPT = PROGRAMS_DIR / 'img_recipe_extractor.py' #os.path.join(PROGRAMS_DIR, "img_recipe_extractor.py")
+IMG_OUTPUT_DIR = ROOT_DIR / 'output' / 'img' #os.path.join(PROGRAMS_DIR, "output", "img")
+IMG_JSON_OUTPUT_NAME = ROOT_DIR / 'output' / 'img' / 'output_filename.txt' #os.path.join(PROGRAMS_DIR, "output", "img", "output_filename.txt") 
+IMG_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 class Controller:
     def __init__(self):
@@ -49,9 +64,10 @@ class Controller:
 
 
         logger.debug(f'Snapshot: {snapshot}')
-        logger.info(f'CURRENT_DIR in controller.py is: {CURRENT_DIR}')
-        logger.info(f'PROGRAMS_DIR is: {PROGRAMS_DIR}')
-        logger.info(f'The Website processing script is located at: {WEBSITE_PROCCESING_SCRIPT}')
+        #logger.info(f'CURRENT_DIR in controller.py is: {CURRENT_DIR}')
+        logger.info(f'ROOT_DIR is: {ROOT_DIR}')
+        #logger.info(f'PROGRAMS_DIR is: {PROGRAMS_DIR}')
+        #logger.info(f'The Website processing script is located at: {WEBSITE_PROCCESING_SCRIPT}')
         logger.info(f'The Website processing script is outputting to: {WEBSITE_JSON_OUTPUT_NAME}')
 
 
@@ -142,28 +158,38 @@ class Controller:
         if not file_path:
             return
         
+        self.view.make_popup(label_msg= 'Importing recipe from image')
+        thread = threading.Thread(target= lambda: self.import_image_thread(image_path= file_path))
+        thread.start()
+
+    def import_image_thread(self, image_path):
         try:
-            result = subprocess.run(
-                ['python', IMG_PROCESSING_SCRIPT, '-i', file_path, '-o', IMG_OUTPUT_DIR],
-                cwd= PROGRAMS_DIR,
-                text=True,
-                check=True
-            )
-            messagebox.showinfo('Img Script Completed', 'Image script completed... importing recipe file into viewer')
-        except subprocess.CalledProcessError as e:
-            messagebox.showerror(f'Img Script error', 'There was an error in the image processing script\nOutput was:\n{e}')
+            result = programs.img_recipe_extractor.import_image(image_path, output_dir= IMG_OUTPUT_DIR, debug=True)
+            self.view.after(0, self.after_import_image_thread)
+        except Exception as e:
+            self.view.after(0, self.after_import_image_thread, e)
+    
+    def after_import_image_thread(self, error=None):
+        if error:
+            self.view.update_popup_status(message= f'There was an error extracting the recipe from the given website\nError...\n{error}')
+            self.view.finish_popup_progress()
             return
-        
-        with open(IMG_JSON_OUTPUT_NAME, 'r') as temp_file:
-            output_name = temp_file.read()
+        else:
+            self.view.update_popup_status(message='content parsed successfully. Beginning import...')
+            with open(IMG_JSON_OUTPUT_NAME, 'r') as temp_file:
+                output_name = temp_file.read()
             if not output_name:
                 return
-        # TODO use model to read the data
-        json_file_path = os.path.join(IMG_OUTPUT_DIR, output_name)
-        logger.info("the json file generated from the image is: ", json_file_path)
+            # TODO use model to read the data
+            json_file_path = os.path.join(IMG_OUTPUT_DIR, output_name)
+            logger.info(f"the json file generated from the image is: {json_file_path}" )
 
-        recipe_json = ModelRecipe.read_file(json_file_path)
-        self.load_json_file(recipe_json, json_file_path)
+            recipe_json = ModelRecipe.read_file(json_file_path)
+            self.load_json_file(recipe_json, json_file_path)
+            self.view.update_popup_status(message= 'Import Completed')
+            self.view.finish_popup_progress()
+
+
 
     def import_website(self):
         logger.info('ran import_website()')
@@ -177,14 +203,15 @@ class Controller:
 
     def import_website_thread(self, url):
         try:
-            result = subprocess.run(
-                ['python', WEBSITE_PROCCESING_SCRIPT, url],
-                cwd= PROGRAMS_DIR,
-                text=True,
-                check=True
-            )
+            #result = subprocess.run(
+            #    ['python', WEBSITE_PROCCESING_SCRIPT, url],
+            #    cwd= PROGRAMS_DIR,
+            #    text=True,
+            #    check=True
+            #)
+            result = programs.extract_recipe_from_website.import_recipe(url)
             self.view.after(0, self.after_import_website_thread)
-        except subprocess.CalledProcessError as e:
+        except Exception as e:
             self.view.after(0, self.after_import_website_thread, e)
 
     def after_import_website_thread(self, error=None):
@@ -208,7 +235,7 @@ class Controller:
             try:
                 process()
                 self.view.after(0, callback)
-            except subprocess.CalledProcessError as e:
+            except Exception as e:
                 self.view.after(0, callback, e)
 
         thread = threading.Thread(target=lambda: run_thread(process, callback), daemon=True)
@@ -238,6 +265,10 @@ class Controller:
                 header.set_image(image)
             else:
                 header.show_img_error()
+        else: #no image present
+            header.remove_image() # remove an image if one exists
+            self.current_image_path = None
+            #self.temp_image_path = None
         view.ingredients_frame.set_ingredients(recipe_json['ingredients'])
         view.directions_frame.set_directions(recipe_json['directions'])
         view.description_frame.set_description(recipe_json['description'] or "")
@@ -282,6 +313,8 @@ class Controller:
         last_snapshot = ModelRecipe.snapshot
         current_snapshot = self.build_json()
         logger.debug(f'are the snapshots the same?: {last_snapshot == current_snapshot}')
+        logger.debug(f'last snapshot: {last_snapshot}')
+        logger.debug(f'current snapshot: {current_snapshot}')
         return last_snapshot == current_snapshot
     
     def set_temp_img_path(self, img_path):

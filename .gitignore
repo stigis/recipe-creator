@@ -5,6 +5,10 @@ __pycache__/
 programs/output/img/*
 programs/output/website/*
 images/*
+build/*
+dist/*
+venv
+*.spec
 
 # Do NOT ignore the .gitkeep file
 # !programs/output/img/.gitkeep

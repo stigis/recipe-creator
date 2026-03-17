@@ -90,6 +90,7 @@ def validate_response(response):
 def extract_recipe_to_json(image_path: str):
     # Load image for processing
     img = Image.open(image_path)
+    client = genai.Client()
     prompt = """
     Extract the recipe information from this image or images. 
     Format the output as a JSON object with the following fields: 
@@ -119,69 +120,80 @@ def extract_recipe_to_json(image_path: str):
         #print(response.text)
         validate_response(response)
         return response.parsed
+    
+def import_image(image_path, output_dir, debug = False):
+    if not debug:
+        print("starting ai prompt")
+        recipe = extract_recipe_to_json(image_path)
+        print("finished ai prompt")
+
+        output = recipe.model_dump(by_alias=True)
+    else:
+        output = DEBUG_DUMMY_OUTPUT
+    
+    title = output["title"]
+    title_normalized = title.replace(" ", "_").lower()
+    filepath = os.path.join(output_dir, f'{title_normalized}.json')
+    print("writing output to File")
+    with open(filepath, "w") as json_file:
+        json.dump(output, json_file, indent=4)
+    print("finished writing output to file")
+
+    # write temp file containing the name of the output file. For use by the batch script
+    temp_file_full_path = os.path.join(output_dir, TEMP_OUTPUT_FILE)
+    with open(temp_file_full_path, "w") as temp_file:
+        temp_file.write(filepath)
+
+
+
 
 # End Functions
 # Start script
-parser = argparse.ArgumentParser(description='Send an image of a recipe to an AI model, output the recipe in a JSON file')
-parser.add_argument('-d', '--debug', action='store_true', help='supply dummy data instead of using an AI model')
-parser.add_argument('-i', '--input', help='input image file. If none is supplied you will choose a file')
-parser.add_argument('-o', '--output', help='output file directory. If none is provided, will use a default location')
-args = parser.parse_args()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Send an image of a recipe to an AI model, output the recipe in a JSON file')
+    parser.add_argument('-d', '--debug', action='store_true', help='supply dummy data instead of using an AI model')
+    parser.add_argument('-i', '--input', help='input image file. If none is supplied you will choose a file')
+    parser.add_argument('-o', '--output', help='output file directory. If none is provided, will use a default location')
+    args = parser.parse_args()
 
-print()
-DEBUG = bool(args.debug)
-OUTPUT_DIR = args.output
-if DEBUG:
-    print('debug mode enabled')
-if not OUTPUT_DIR:
-    ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-    OUTPUT_DIR = os.path.join(ROOT_DIR, 'ai_output')
-if args.input:
-    print('input provided: ', args.input)
-    img_path = args.input
-else:
-    img_path = get_img_path()
+    print()
+    DEBUG = bool(args.debug)
+    OUTPUT_DIR = args.output
+    if DEBUG:
+        print('debug mode enabled')
+    if not OUTPUT_DIR:
+        ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+        OUTPUT_DIR = os.path.join(ROOT_DIR, 'ai_output')
+    if args.input:
+        print('input provided: ', args.input)
+        img_path = args.input
+    else:
+        img_path = get_img_path()
 
-# Validate that the image file exists
-p = Path(img_path)
-if not p.is_file():
-    print("The input img file was not found")
-    sys.exit()
+    # Validate that the image file exists
+    p = Path(img_path)
+    if not p.is_file():
+        print("The input img file was not found")
+        sys.exit()
 
-# The client gets the API key from the environment variable `GEMINI_API_KEY`
-client = genai.Client()
+    print()
+    if not DEBUG:
+        print("starting ai prompt")
+        recipe = extract_recipe_to_json(img_path)
+        print("finished ai prompt")
 
-"""
-for m in client.models.list():
-    for action in m.supported_actions:
-        if action == "generateContent":
-            print(m.name)
+        output = recipe.model_dump(by_alias=True)
+    else:
+        output = DEBUG_DUMMY_OUTPUT
+    title = output["title"]
+    title_normalized = title.replace(" ", "_").lower()
+    filepath = os.path.join(OUTPUT_DIR, f'{title_normalized}.json')  #f"ai_json_output{os.sep}{title_normalized}.json"
+    print("writing output to File")
+    with open(filepath, "w") as json_file:
+        json.dump(output, json_file, indent=4)
+    print("finished writing output to file")
 
-print("gemma info")
-model_info = client.models.get(model="gemma-3-12b-it")
-print(model_info)
-"""
-
-#recipe = None #extract_recipe_to_json(img_path)
-# output json in a JSON file
-print()
-if not DEBUG:
-    print("starting ai prompt")
-    recipe = extract_recipe_to_json(img_path)
-    print("finished ai prompt")
-
-    output = recipe.model_dump(by_alias=True)
-else:
-    output = DEBUG_DUMMY_OUTPUT
-title = output["title"]
-title_normalized = title.replace(" ", "_").lower()
-filepath = os.path.join(OUTPUT_DIR, f'{title_normalized}.json')  #f"ai_json_output{os.sep}{title_normalized}.json"
-print("writing output to File")
-with open(filepath, "w") as json_file:
-    json.dump(output, json_file, indent=4)
-print("finished writing output to file")
-
-# write temp file containing the name of the output file. For use by the batch script
-temp_file_full_path = os.path.join(OUTPUT_DIR, TEMP_OUTPUT_FILE)
-with open(temp_file_full_path, "w") as temp_file:
-    temp_file.write(filepath)
+    # write temp file containing the name of the output file. For use by the batch script
+    temp_file_full_path = os.path.join(OUTPUT_DIR, TEMP_OUTPUT_FILE)
+    with open(temp_file_full_path, "w") as temp_file:
+        temp_file.write(filepath)

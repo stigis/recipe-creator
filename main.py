@@ -1,5 +1,4 @@
 import logging
-from controllers.controller import Controller
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +13,9 @@ if __name__ == '__main__':
     console_handler.setLevel(logging.INFO)
     logging.basicConfig(level=logging.DEBUG, handlers=[file_handler, console_handler])
     logger.info('Starting Application...')
+
+    # import application files only after setting up logger
+    from controllers.controller import Controller
     controller = Controller()
     controller.main()
     logger.info('Finished running Controller. Ending Application...')

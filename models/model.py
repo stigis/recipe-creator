@@ -8,6 +8,7 @@ from typing import List, Optional, ClassVar
 import json
 import re
 from pathlib import Path
+import sys
 import time
 import shutil
 from PIL import Image
@@ -19,9 +20,9 @@ logger = logging.getLogger(__name__)
 class ModelRecipe(BaseModel):
     recent_file_manager: ClassVar[RecentFileManager] = RecentFileManager()
     snapshot: ClassVar[dict] = None
-    PROJECT_ROOT: ClassVar[Path] = Path(__file__).resolve().parent.parent #recipe_builder
-    image_dir: ClassVar[Path] = PROJECT_ROOT / 'images' # recipe_builder/images
-    image_dir.mkdir(exist_ok=True)
+    PROJECT_ROOT: ClassVar[Path] = None # set at the bottom of the file #Path(__file__).resolve().parent.parent #recipe_builder
+    image_dir: ClassVar[Path] = None #PROJECT_ROOT / 'images' # recipe_builder/images
+    #image_dir.mkdir(exist_ok=True)
 
 
     title: str = Field(description="The title of the recipe")
@@ -63,11 +64,10 @@ class ModelRecipe(BaseModel):
         logger.info(f'image_ref is: {relative_dest}')
 
 
-
-
-
     @staticmethod
     def read_file(filepath: str):
+        if filepath:
+            filepath = str(filepath) # ensure filepath is a str and not a Path
         with open(filepath, 'r', encoding='utf-8') as json_file:
             json_object = json.load(json_file)
         logger.debug(f'Loaded json object from file: {json_object}')
@@ -105,6 +105,23 @@ class ModelRecipe(BaseModel):
         except OSError as e:
             logger.error(f'Error reading file: {e}')
             return None
+
+    @staticmethod
+    def init_project_root():
+        if getattr(sys, 'frozen', False):
+            # running in a bundle
+             ModelRecipe.PROJECT_ROOT = Path(sys._MEIPASS).resolve().parent
+        else:
+            # running script locally
+            ModelRecipe.PROJECT_ROOT = Path(__file__).resolve().parent.parent
+        
+        # init images folder for models
+        ModelRecipe.image_dir = ModelRecipe.PROJECT_ROOT / 'images'
+        ModelRecipe.image_dir.mkdir(exist_ok=True)
+        logger.info(f'PROJECT ROOT is: {ModelRecipe.PROJECT_ROOT}')
+        logger.info(f'image directory is: {ModelRecipe.image_dir}')
+
+ModelRecipe.init_project_root()
 
 
 

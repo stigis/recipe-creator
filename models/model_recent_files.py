@@ -34,6 +34,8 @@ class RecentFileManager():
             return []
 
     def add_file(self, filename):
+        if filename:
+            filename = str(filename) # ensure filepath is a str and not a Path
         if filename in self.recent_files:
             self.recent_files.remove(filename)
 

@@ -181,6 +181,11 @@ class HeaderFrame(ctk.CTkFrame):
 
     def set_image(self, image: Image):
         self.display_image(image)
+
+    def remove_image(self):
+        if self.image_label:
+            self.image_label.destroy()
+            self.image_label = None
         
     def show_img_error(self):
         messagebox.showerror(title='Image Error', message='The image of the dish could not be loaded. See logs for more details')
