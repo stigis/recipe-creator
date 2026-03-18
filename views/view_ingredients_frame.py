@@ -56,6 +56,15 @@ class LinkedList:
         if current_node == self.tail:
             self.tail = new_node
         return new_node
+    
+    def get(self, index: int):
+        if index > self.size - 1:
+            return -1
+        current_node = self.head
+        for i in range(index):
+            current_node = current_node.next
+        
+        return current_node.data
 
     def remove_node(self, node):
         prev = node.prev
