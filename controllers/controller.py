@@ -29,7 +29,8 @@ if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
     ROOT_DIR = Path(sys._MEIPASS).resolve().parent
 else:
     # running locally in python script
-    ROOT_DIR = Path(__file__).resolve().parent.parent
+    # this gives the programs directory
+    ROOT_DIR = Path(__file__).resolve().parent.parent / 'programs'
 
 #CURRENT_DIR = os.path.dirname(os.path.abspath(__file__)) # the directory containing this file
 # get the parent directory that contains this file
@@ -245,42 +246,29 @@ class Controller:
     
     def import_ai_recipe(self, recipe_json_str):
         json_object = ModelRecipe.read_json_str(recipe_json_str)
-        self.load_json_file(json_object, file_path=None)
-
-    def load_json_file(self, recipe_json, file_path):
+        self.load_json_file(json_object, filepath=None)
+    
+    def load_json_file(self, recipe_json, filepath):
         """Populate the view with JSON data validated by the Model"""
-        view = self.view
-        mode = view.menu_bar.get_mode().get()
-        logger.info(f'mode is: {mode}')
-        if mode == 'View':
-            view.switch_to_edit()
-        header = view.header_frame
-        header.set_title(recipe_json['title'])
-        header.set_time(recipe_json['time'] or "")
-        header.set_serving(recipe_json['serving size'] or "")
-        if recipe_json["image ref"]:
-            self.current_image_path = recipe_json["image ref"]
+        image = None
+        image_error = False
+        if recipe_json.get('image ref', None):
+            self.current_image_path = recipe_json['image ref']
             image = ModelRecipe.get_image(self.current_image_path)
-            if image:
-                header.set_image(image)
-            else:
-                header.show_img_error()
-        else: #no image present
-            header.remove_image() # remove an image if one exists
-            self.current_image_path = None
-            #self.temp_image_path = None
-        view.ingredients_frame.set_ingredients(recipe_json['ingredients'])
-        view.directions_frame.set_directions(recipe_json['directions'])
-        view.description_frame.set_description(recipe_json['description'] or "")
-        if file_path:
-            self.current_file = file_path
-            self.view.status_bar.configure(text=f'Opened {self.get_basename(self.current_file)}   ')
-            self.view.add_recent_file(file_path, ModelRecipe.recent_file_manager.MAX)
+            if not image: # error loading image
+                image_error = True
+        else:
+            self.current_image_path = None # no image present
+        
+        if filepath:
+            self.current_file = filepath
+            #self.view.add_recent_file(filepath, ModelRecipe.recent_file_manager.MAX)
             ModelRecipe.set_snapshot(recipe_json) # only change the snapshot if we are loading from a file (saved data)
 
-        self._update_visibility()
-        if mode == 'View':
-            view.switch_to_view()
+        # TODO view.load_json(recipeJson, filepath)
+        self.view.load_json(recipe_json, image=image, image_error=image_error, filepath=filepath, max_recents=ModelRecipe.recent_file_manager.MAX)
+
+
 
 
     def build_json(self):

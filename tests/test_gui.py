@@ -3,6 +3,20 @@ from unittest.mock import MagicMock
 from views.view import View
 import time
 
+mock_json_data = {
+    "title": "Roast Beef Sandwich",
+    "time": "2 hours",
+    "serving size": "1 large sandwich",
+    "ingredients": ["2 slices of bread", "A few slices of roast beef", "tomato slices", "pickles"],
+    "directions": [
+        "put tomatoes on top of one slice of bread",
+        "add pickles",
+        "add the roast beef",
+        "add the other slice of bread"
+        ],
+    "description": "a plain ol roast beef sandwich"
+}
+
 
 class TestGui(unittest.TestCase):
     
@@ -103,6 +117,24 @@ class TestGui(unittest.TestCase):
         third_direction_text = directions_frame.direction_list[2]['direction']
         self.main_view.update()
         self.assertEqual(third_direction_text.get('1.0', 'end-1c'), 'Steptesting insert new direction step')
+
+    def test_load_json(self):
+        self.main_view.menu_bar.file_menu.invoke('Open')
+        self.mock_controller.open_file.assert_called_once()
+
+        self.main_view.load_json(mock_json_data)
+        header_frame = self.main_view.header_frame
+        self.assertEqual(header_frame.get_title(), mock_json_data['title'])
+        self.assertEqual(header_frame.get_serving(), mock_json_data['serving size'])
+        self.assertEqual(header_frame.get_time(), mock_json_data['time'])
+        self.assertEqual(self.main_view.description_frame.get_description(), mock_json_data['description'])
+
+        self.assertEqual(self.main_view.ingredients_frame.get_ingredients(), mock_json_data['ingredients'])
+        self.assertEqual(self.main_view.directions_frame.get_directions(), mock_json_data['directions'])
+
+
+
+        
 
 
 

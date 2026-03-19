@@ -16,8 +16,10 @@ from views.view_description_frame import DescriptionFrame
 from views.view_ctk_scrollable_frame import ScrollableFrame
 from views.view_chat_window import ChatWindow
 from views.view_waiting_popup import WaitingPopup
+import utils
 import constants
 import platform # used to determine OS
+from pathlib import Path
 import logging
 logger = logging.getLogger(__name__)
 
@@ -135,6 +137,37 @@ class View(ctk.CTk):
     def add_recent_file(self, file, max_recents):
         self.menu_bar.add_recent(file, max_recents)
 
+    def load_json(self, recipe_json, image=None, filepath=None, image_error=False, max_recents = 10):
+        mode = self.menu_bar.get_mode().get()
+        logger.info(f'mode is: {mode}')
+        if mode == 'View':
+            self.switch_to_edit()
+
+        self.header_frame.set_title(recipe_json['title'])
+        self.header_frame.set_time(recipe_json['time'] or "")
+        self.header_frame.set_serving(recipe_json['serving size'] or "")
+        self.ingredients_frame.set_ingredients(recipe_json['ingredients'])
+        self.directions_frame.set_directions(recipe_json['directions'])
+        self.description_frame.set_description(recipe_json['description'] or "")
+
+        if filepath:
+            normalized_name = Path(filepath).stem
+            self.status_bar.configure(text=f'Opened {normalized_name}   ')
+            self.add_recent_file(filepath, max_recents)
+
+        if image:
+            self.header_frame.display_image(image)
+        elif image_error:
+            self.header_frame.show_img_error()
+        else:
+            self.header_frame.remove_image()
+        
+        self.update()
+        self.update_widgets(self)
+
+        if mode == 'View':
+            self.switch_to_view()
+
     def on_close(self):
         are_snapshots_identical = self.controller.compare_to_snapshot()
         if are_snapshots_identical:
@@ -175,6 +208,18 @@ class View(ctk.CTk):
 
     def enable_ai(self):
         self.menu_bar.enable_ai_buttons()
+    
+    '''
+        Recursively serach through the widget tree
+        Call _update_height for any AutoSizingTextbox widgets
+        Uses DFS
+    '''
+    def update_widgets(self, parent):
+        for child in parent.winfo_children():
+            if isinstance(child, utils.AutoSizingTextbox):
+                child._update_height(event=None)
+            
+            self.update_widgets(child)
 
     def main(self):
         logger.info('in main of view')
