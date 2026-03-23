@@ -9,6 +9,7 @@ import customtkinter as ctk
 import constants
 from tkinter import filedialog
 from PIL import Image, ImageTk
+from .view_image_cropper import ImageCropper
 import logging
 logger = logging.getLogger(__name__)
 
@@ -131,10 +132,12 @@ class HeaderFrame(ctk.CTkFrame):
             return
 
         original_img = Image.open(img_file)
-        self.display_image(original_img)
+        ctk_image = self.display_image(original_img)
         self.controller.set_temp_img_path(img_file)
+        self.update()
+        ImageCropper(self, original_img, self.display_image)
 
-    def display_image(self, image):
+    def display_image(self, image: Image):
         if self.image_label: # if an image is already being diplayed
             self.image_label.destroy()
 
@@ -155,6 +158,16 @@ class HeaderFrame(ctk.CTkFrame):
         ctk_img = ctk.CTkImage(resized, size=(resized.width // scaling, resized.height // scaling))
         self.image_label = ctk.CTkLabel(self.img_frame, image=ctk_img, text='')
         self.image_label.pack(side='top', padx= 20, pady=10, fill='x', expand=True)
+        return ctk_img
+
+    def display_callback(self, cropped_image):
+        if self.image_label: # if an image is already being diplayed
+            self.image_label.destroy()
+
+
+        ctk_image = ctk.CTkImage(cropped_image, size = (500, 500))
+        self.image_label = ctk.CTkLabel(self.img_frame, image=ctk_image, text='')
+        self.image_label.pack(side='top', padx=20, pady=10, fill='x', expand=True)
 
 
 

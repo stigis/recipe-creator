@@ -17,6 +17,7 @@ import subprocess
 import requests
 import threading
 from controllers.api_key_controller import APIKeyController
+from controllers.ai_controller import AIController
 
 import programs.img_recipe_extractor
 import programs.extract_recipe_from_website
@@ -51,11 +52,14 @@ class Controller:
         #self.model = Model()
         # create other controllers first since the views reference on them. Avoid null pointer exceptions
         self.api_key_controller = APIKeyController()
+        self.ai_controller = AIController()
         self.view = View(self)
         self.api_key_controller.set_view(self.view) # set here to avoid a Null pointer exception
         self.api_key_controller.check_api_key()
+        self.ai_controller.set_view(self.view)
 
         self.current_file = None
+        self.has_new_image = False
         self.temp_image_path = None
         self.current_image_path = None
         recents_list = ModelRecipe.recent_file_manager.recent_files
@@ -165,7 +169,7 @@ class Controller:
 
     def import_image_thread(self, image_path):
         try:
-            result = programs.img_recipe_extractor.import_image(image_path, output_dir= IMG_OUTPUT_DIR, debug=True)
+            result = programs.img_recipe_extractor.import_image(image_path, output_dir= IMG_OUTPUT_DIR, ai_model=self.ai_controller.get_image_import_model(), debug=False)
             self.view.after(0, self.after_import_image_thread)
         except Exception as e:
             self.view.after(0, self.after_import_image_thread, e)
@@ -308,6 +312,14 @@ class Controller:
     def set_temp_img_path(self, img_path):
         self.temp_image_path = img_path
         logger.info(f'temp image path is: {img_path}, the image will not be copied and saved until the recipe is saved')
+
+    def mark_new_image(self):
+        self.has_new_image = True
+        logger.info('A new image has been uploaded')
+
+    def clear_new_image(self):
+        self.has_new_image = False
+        logger.info('the image is no longer new, it has been recorded')
         
     def export_to_mongo(self):
         result = messagebox.askyesno(title='Export to Database', message='Are you sure you want to add this Recipe to the database?')

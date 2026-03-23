@@ -37,7 +37,7 @@ class View(ctk.CTk):
         logger.info(f'the platform is: {platform.system()}')
         if platform.system() == 'Windows':
             self.after(0, lambda: self.state('zoomed'))
-        elif platform.system == 'Linux':
+        elif platform.system() == 'Linux':
             self.after(0, lambda: self.attributes('-zoomed', True))
         else:
             self.after(0, lambda: self.state('zoomed')) # fallback for MacOs or others

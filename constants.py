@@ -14,6 +14,7 @@ class Color(Enum):
     LIGHT_GRAYISH_BLUE = '#CAD9E0'
     READING_GRAY_BG = '#2F2F2F'
     READING_GRAY_TEXT = '#E0E0E0'
+    FERN_GREEN = '#4F7942'
 
     #CAD9E0 soft blue-gray
     #D1D7BE muted sage

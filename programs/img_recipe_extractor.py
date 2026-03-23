@@ -7,6 +7,7 @@ import sys
 import os
 from pathlib import Path
 import json
+import re
 import argparse
 import tkinter as tk
 from tkinter import filedialog
@@ -87,7 +88,7 @@ def validate_response(response):
 
 # Sends a prompt to the Gemini API, using the provided image as input
 # Outputs Json data containing the extracted recipe
-def extract_recipe_to_json(image_path: str):
+def extract_recipe_to_json(image_path: str, ai_model: str = 'gemini-2.5-flash'):
     # Load image for processing
     img = Image.open(image_path)
     client = genai.Client()
@@ -100,7 +101,7 @@ def extract_recipe_to_json(image_path: str):
     current_temp = 1.0
     for attempt in range(2):
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=ai_model,
             contents=[img, prompt],
             config={
                 "response_mime_type": "application/json",
@@ -121,10 +122,55 @@ def extract_recipe_to_json(image_path: str):
         validate_response(response)
         return response.parsed
     
-def import_image(image_path, output_dir, debug = False):
+''' Uses a Gemma model instead of a Gemini model for the prompt
+    Because it uses a Gemma model, the response must be first read as plain text,
+    then parsed as json, then passed to a pydantic model
+'''
+def extract_image_to_json_gemma(image_path: str):
+    img = Image.open(image_path)
+    client = genai.Client()
+    prompt = """
+    Extract the recipe information from this image or images.
+    When extracting the ingredients, for any quantity number that appears, examine the image 3 times to confirm its value before writing it down. Apply this rule to all numbers, whether they are whole numbers, mixed numbers, or fractions
+    Format the output as a JSON object with the following fields: 
+        "title": the name of the recipe as a string,
+        "time": The amount of time the recipe takes, as a string (optional, can be null if nothing is found),
+        "serving size": The serving information for the recipe as a string (optional, can be null if nothing is found)
+        "ingredients": an array of strings containing all the ingredients needed for the recipe,
+        "directions": an array of strings containing all the directions needed to make the recipe, in order,
+        "description": a  string description of the recipe (optional, can be null if nothing is found)
+
+    """
+    current_temp = 1.0
+    for attempt in range(3):
+        response = client.models.generate_content(
+            model='gemma-3-27b-it',
+            contents=[img, prompt],
+            config = {
+                'temperature': current_temp
+            }
+        )
+
+        if response.candidates and response.candidates[0].finish_reason == 4: # recitation
+            print('prompt failed due to recitation')
+            current_temp += 0.2
+            prompt = f'{prompt} \n\n Please summarize or rephrase the output to avoid direct quotes.'
+            continue
+
+        print(f"The Gemma model's response is:\n{response.text}")
+        match: re.Match = re.search(r'\{.*\}', response.text, re.DOTALL)
+        if not match:
+            print('Error: could not extract JSON object from AI Model Response')
+            return
+        json_str = match.group(0)
+        json_data = json.loads(json_str)
+        recipe_model = RecipeSchema(**json_data)
+        return recipe_model
+
+def import_image(image_path, output_dir, ai_model='gemini-2.5-flash', debug = False):
     if not debug:
         print("starting ai prompt")
-        recipe = extract_recipe_to_json(image_path)
+        recipe = extract_recipe_to_json(image_path, ai_model) #extract_image_to_json_gemma(image_path) #
         print("finished ai prompt")
 
         output = recipe.model_dump(by_alias=True)

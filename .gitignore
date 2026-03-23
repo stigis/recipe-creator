@@ -9,6 +9,7 @@ build/*
 dist/*
 venv
 *.spec
+adam.py
 
 # Do NOT ignore the .gitkeep file
 # !programs/output/img/.gitkeep

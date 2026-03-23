@@ -5,6 +5,7 @@
 import tkinter as tk
 import customtkinter as ctk
 from tkinter import ttk
+import platform
 import logging
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,15 @@ def center_toplevel(toplevel: ctk.CTkToplevel, width: int, height: int):
     y_offset = int( (center_height - (height // 2) ) * scaling)
     logger.debug(f'width: {width}, height: {height}, x_offset: {x_offset}, y_offset: {y_offset}')
     toplevel.geometry(f"{width}x{height}+{x_offset}+{y_offset}")
+
+def zoom_window(window):
+        if platform.system() == 'Windows':
+            window.after(0, lambda:   window.state('zoomed'))
+        elif platform.system() == 'Linux':
+            window.after(0, lambda:   window.attributes('-zoomed', True))
+        else:
+            window.after(0, lambda:   window.state('zoomed')) # fallback for MacOs or others
+
 
 
 
