@@ -7,10 +7,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 class ImageCropper(ctk.CTkToplevel):
-    def __init__(self, master, pil_image, callback):
+    def __init__(self, master, pil_image, callback, whole_callback):
         super().__init__()
         self.title("Select Area")
         self.callback = callback #None # Function to send the cropped image back
+        self.whole_img_callback = whole_callback
         self.original_pil: Image = pil_image
         self.preview_pil: Image = None
         self.tk_image = None #ImageTk.PhotoImage(self.original_pil)
@@ -24,17 +25,17 @@ class ImageCropper(ctk.CTkToplevel):
         # In your Toplevel __init__
         #self.focus()
         #self.lift()
-        self.attributes("-topmost", True)    # Force to absolute top
-        self.after(10, lambda: self.attributes("-topmost", False)) # Unpin immediately
-        self.after(20, utils.zoom_window, self)
+        #self.attributes("-topmost", True)    # Force to absolute top
+        #self.after(10, lambda: self.attributes("-topmost", False)) # Unpin immediately
+        #self.after(20, utils.zoom_window, self)
         #self.after(1000, self.delayed_setup)
-        self.after(1000, self.fit_image) # resize image
+        #self.after(1000, self.fit_image) # resize image
         #self.grab_set()
         #self.after(5000, self.grab_release)
 
         #self.after(1000, utils.zoom_window, self)
         #self.geometry()
-        self.canvas = tk.Canvas(self, bg='blue')
+        self.canvas = tk.Canvas(self, bg=constants.Color.CREAM.value)
         self.canvas.pack(fill='both', expand=True)
 
 
@@ -59,9 +60,26 @@ class ImageCropper(ctk.CTkToplevel):
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         
-        # Action Button
-        self.btn_use = ctk.CTkButton(self, text="Use Selection", command=self.crop_and_save, fg_color=constants.Color.FERN_GREEN.value, text_color='#FFFFFF')
-        self.btn_use.pack(pady=10)
+        # Action Buttons
+        self.btn_frame = ctk.CTkFrame(self, fg_color=constants.Color.MUTED_SAGE.value)
+        self.btn_frame.pack(fill='x')
+        self.btn_use = ctk.CTkButton(self.btn_frame, text="Use Selection", command=self.crop_and_save, fg_color=constants.Color.FERN_GREEN.value, text_color='#FFFFFF')
+        self.btn_use_whole = ctk.CTkButton(self.btn_frame, text='Use the entire image', command=self.use_whole_image, fg_color=constants.Color.FERN_GREEN.value, text_color='#FFFFFF')
+        
+        self.btn_frame.grid_columnconfigure(0, weight=1)
+        self.btn_frame.grid_columnconfigure(3, weight=1)
+        self.btn_use.grid(row=0, column=1, padx=5, pady=10, sticky='ew')
+        self.btn_use_whole.grid(row=0, column=2, padx=5, pady=10, sticky='ew')
+
+        # maximize window and add image. Is called after the window loads using after_idle()
+        self.after_idle(self.maximize_window)
+
+    def maximize_window(self):
+        self.lift()
+        self.attributes('-topmost', True)
+        self.focus_set()
+        utils.zoom_window(self)
+        self.after_idle(self.fit_image)
 
     def delayed_setup(self):
         original_width, original_height = self.pil_image.size
@@ -175,3 +193,7 @@ class ImageCropper(ctk.CTkToplevel):
             # Send back to main app and close
             self.callback((left, top, right, bottom), self.preview_pil, self.scale)
             self.destroy()
+
+    def use_whole_image(self):
+        self.whole_img_callback()
+        self.destroy()

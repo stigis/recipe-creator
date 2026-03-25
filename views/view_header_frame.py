@@ -8,7 +8,7 @@ from tkinter import messagebox
 import customtkinter as ctk
 import constants
 from tkinter import filedialog
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageGrab
 from .view_image_cropper import ImageCropper
 import logging
 logger = logging.getLogger(__name__)
@@ -73,7 +73,11 @@ class HeaderFrame(ctk.CTkFrame):
         self.img_frame = ctk.CTkFrame(self, fg_color=self.HEADER_BACKGROUND)
         self.img_frame.pack(side='top', fill='x')
         self.image_button = ctk.CTkButton(self.img_frame, text='Upload Image', command= self.on_img_button_clicked, fg_color='#4F7942', text_color='#FFFFFF')
-        self.image_button.pack(side='top')
+        self.image_paste_button = ctk.CTkButton(self.img_frame, text='Paste Image from Clipboard', command= self.on_paste_image,fg_color=constants.Color.FERN_GREEN.value, text_color='#FFFFFF')
+        self.img_frame.grid_columnconfigure(0, weight=1)
+        self.img_frame.grid_columnconfigure(3, weight=1)
+        self.image_button.grid(row=0, column=1, sticky='ew', padx=10)
+        self.image_paste_button.grid(row=0, column=2, sticky='ew',padx=10)
         self.update()
         logger.debug(f'img frame width is {self.img_frame.winfo_width()}')
 
@@ -138,7 +142,18 @@ class HeaderFrame(ctk.CTkFrame):
         #ctk_image = self.display_image(self.original_pil)
         self.controller.new_image_path = img_file
         self.update()
-        ImageCropper(self, self.original_pil, self.crop_callback)
+        ImageCropper(self, self.original_pil, self.crop_callback, self.display_image)
+
+    def on_paste_image(self):
+        img = ImageGrab.grabclipboard()
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB') # remove alpha channel/convert ot jpg format
+        if not img:
+            return
+        self.controller.new_image_path = 'image_from_clipboard.jpg'
+        logger.info('pasted image from clipboard into gui')
+        self.set_image(img)
+
 
     # creates a PIL scaled to fit within the screen/gui
     def create_resized_img(self):
@@ -180,7 +195,8 @@ class HeaderFrame(ctk.CTkFrame):
         ctk_scaling = ctk.ScalingTracker.get_widget_scaling(self.img_frame)
         ctk_img = ctk.CTkImage(resized_pil, size=(resized_pil.width // ctk_scaling, resized_pil.height // ctk_scaling))
         self.image_label = ctk.CTkLabel(self.img_frame, image=ctk_img, text='')
-        self.image_label.pack(side='top', padx= 20, pady=10, fill='x', expand=True)
+        #self.image_label.pack(side='top', padx= 20, pady=10, fill='x', expand=True)
+        self.image_label.grid(row=1, column=1, columnspan=2, padx=20, pady=10)
 
 
 
