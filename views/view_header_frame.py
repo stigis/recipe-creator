@@ -20,6 +20,8 @@ class HeaderFrame(ctk.CTkFrame):
         super().__init__(parent, fg_color=self.HEADER_BACKGROUND)
         self.pack(padx=15, pady=15, fill='x', ipady=25)
         self.image_label = None
+        self.original_pil = None
+        self.preview_pil = None # contains the PIL that has been resized to fit inside the gui
         self.min_entry_width = 175
         self.controller = controller 
         self._make_title_entry()
@@ -123,7 +125,7 @@ class HeaderFrame(ctk.CTkFrame):
             entry.configure(width = self.min_entry_width)
 
     def on_img_button_clicked(self):
-        img_file = filedialog.askopenfilename(
+        img_file: str = filedialog.askopenfilename(
             title='Choose an Image',
             filetypes=[('Image files', '*.png *jpg *jpeg')]
         )
@@ -131,34 +133,56 @@ class HeaderFrame(ctk.CTkFrame):
         if not img_file:
             return
 
-        original_img = Image.open(img_file)
-        ctk_image = self.display_image(original_img)
-        self.controller.set_temp_img_path(img_file)
+        self.original_pil = Image.open(img_file)
+        #self.create_resized_img()
+        #ctk_image = self.display_image(self.original_pil)
+        self.controller.new_image_path = img_file
         self.update()
-        ImageCropper(self, original_img, self.display_image)
+        ImageCropper(self, self.original_pil, self.crop_callback)
 
-    def display_image(self, image: Image):
+    # creates a PIL scaled to fit within the screen/gui
+    def create_resized_img(self):
+        self.update()
+        if not self.original_pil:
+            return
+        
+        logger.debug(f'image original size is: {self.original_pil.size}')
+        orig_w, orig_h = self.original_pil.size
+        frame_width = self.img_frame.winfo_width()
+        ratio = frame_width / self.original_pil.width
+        new_width = int(orig_w * ratio)
+        new_height = int(orig_h * ratio)
+        self.preview_pil = self.original_pil.resize(size=(new_width, new_height))
+        logger.debug(f'scaling ratio is: {ratio}')
+        logger.debug(f'the scaled size is: {self.preview_pil.size}')
+
+    
+    # displays the image pil stored in self.original_pil
+    # before displaying, it resizes the pil to fit the frame's width and screen height,
+    # Then it take ctk scaling into account
+    # the self.original_pil object is unchanged
+    def display_image(self):
         if self.image_label: # if an image is already being diplayed
             self.image_label.destroy()
 
-        original_width, original_height = image.size
+        self.update()
+        orig_w, orig_h = self.original_pil.size
         frame_width = self.img_frame.winfo_width()
-        if original_width > frame_width:
-            logger.info(f'Scaling image. Image width is {original_width}, but frame width is {frame_width}')
-            # Will always be a fraction < 1, because the image's width (original width) is bigger
-            # Ex: If the image is twice as wide as the frame, the ratio will be 0.5, and the image's width will be halved, allowing it to fit in the frame
-            ratio = frame_width / original_width 
-            original_width = original_width * ratio
-            original_height = original_width * ratio
-        resized = image.resize((int(original_width), int(original_height)), Image.LANCZOS)
-        #tk_img = ImageTk.PhotoImage(resized_img)
-        scaling = ctk.ScalingTracker.get_widget_scaling(self)
-        logger.debug(f'img_frame width is {self.img_frame.winfo_width()}')
-        logger.debug(f'img_frame height is {self.img_frame.winfo_reqheight()}')
-        ctk_img = ctk.CTkImage(resized, size=(resized.width // scaling, resized.height // scaling))
+        screen_height = self.winfo_screenheight()
+        logger.debug(f'original size is: {self.original_pil.size}')
+        scale = min(frame_width / orig_w, screen_height / orig_h)
+        logger.debug(f'frame width is {frame_width}, screen height is {screen_height}')
+        logger.debug(f'width scaling is {frame_width / orig_w}, height scaling is {screen_height / orig_h}, min is {scale}')
+
+        new_width = int(orig_w * scale)
+        new_height = int(orig_h * scale)
+        resized_pil: Image = self.original_pil.resize((new_width, new_height))
+        ctk_scaling = ctk.ScalingTracker.get_widget_scaling(self.img_frame)
+        ctk_img = ctk.CTkImage(resized_pil, size=(resized_pil.width // ctk_scaling, resized_pil.height // ctk_scaling))
         self.image_label = ctk.CTkLabel(self.img_frame, image=ctk_img, text='')
         self.image_label.pack(side='top', padx= 20, pady=10, fill='x', expand=True)
-        return ctk_img
+
+
 
     def display_callback(self, cropped_image):
         if self.image_label: # if an image is already being diplayed
@@ -169,7 +193,32 @@ class HeaderFrame(ctk.CTkFrame):
         self.image_label = ctk.CTkLabel(self.img_frame, image=ctk_image, text='')
         self.image_label.pack(side='top', padx=20, pady=10, fill='x', expand=True)
 
+    def crop_callback(self, cropped_coords, preview_pil, scale):
+        logger.debug(f'cropped coords: {cropped_coords}')
+        self.preview_pil = preview_pil
+        # r for the resized pil
+        rx1, ry1, rx2, ry2 = cropped_coords
+        ox1 = rx1 / scale
+        ox2 = rx2 / scale
+        oy1 = ry1 / scale
+        oy2 = ry2 / scale
+        logger.debug(f'original cropped conversion: {(ox1, oy1, ox2, oy2)}')
+        self.original_pil = self.original_pil.crop((ox1, oy1, ox2, oy2))
+        #self.display_image(self.original_pil)
+        self.display_image()
+        #new_original_pil = self.original_pil.crop((ox1, oy1, ox2, oy2))
+        #self.original_pil = new_original_pil
+        #self.display_image(self.original_pil)
 
+    def get_image(self):
+        '''Returns a PIL image of the image on display in the header, or None if there is no image'''
+        if not self.image_label or not self.image_label.winfo_exists():
+            return None
+        
+        image_object: ctk.CTkImage = self.image_label.cget('image')
+        pil_image = image_object._light_image or image_object._dark_image
+        logger.info(f'image object is: {image_object}')
+        logger.info(f'pil image object is {pil_image}')
 
     def get_title(self):
         return self.title_entry.get()
@@ -193,7 +242,8 @@ class HeaderFrame(ctk.CTkFrame):
         self.serve_value.insert('end', serving)
 
     def set_image(self, image: Image):
-        self.display_image(image)
+        self.original_pil = image
+        self.display_image()
 
     def remove_image(self):
         if self.image_label:

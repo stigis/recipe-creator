@@ -156,7 +156,7 @@ class View(ctk.CTk):
             self.add_recent_file(filepath, max_recents)
 
         if image:
-            self.header_frame.display_image(image)
+            self.header_frame.set_image(image)
         elif image_error:
             self.header_frame.show_img_error()
         else:

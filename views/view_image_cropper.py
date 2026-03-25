@@ -12,8 +12,10 @@ class ImageCropper(ctk.CTkToplevel):
         self.title("Select Area")
         self.callback = callback #None # Function to send the cropped image back
         self.original_pil: Image = pil_image
-        self.tk_image = ImageTk.PhotoImage(self.original_pil)
+        self.preview_pil: Image = None
+        self.tk_image = None #ImageTk.PhotoImage(self.original_pil)
         self.resized_image = None
+        self.scale = 0
         
         
         # Load the original image
@@ -97,10 +99,12 @@ class ImageCropper(ctk.CTkToplevel):
         scale = min(canvas_w / img_w, canvas_h / img_h)
         new_w = int(img_w * scale)
         new_h = int(img_h * scale)
+        self.scale = scale
 
         # 4. Resize and Update
-        self.resized_pil = self.original_pil.resize((new_w, new_h), Image.Resampling.LANCZOS)
-        self.tk_image = ImageTk.PhotoImage(self.resized_pil)
+        self.preview_pil = self.original_pil.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        #self.resized_pil = self.original_pil.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        self.tk_image = ImageTk.PhotoImage(self.preview_pil)
         
         # Clear and Draw (Centered)
         self.canvas.delete("all")
@@ -148,8 +152,8 @@ class ImageCropper(ctk.CTkToplevel):
 
         # 2. Adjust for the anchor point 
         # (By default, images are anchored at the 'center')
-        width = self.resized_pil.width
-        height = self.resized_pil.height
+        width = self.preview_pil.width
+        height = self.preview_pil.height
         top_left_x = img_x - (width / 2)
         top_left_y = img_y - (height / 2)
         if self.selection_coords:
@@ -165,9 +169,9 @@ class ImageCropper(ctk.CTkToplevel):
             bottom = bottom - top_left_y
             
             # Crop the PIL image
-            cropped_img = self.resized_pil.crop((left, top, right, bottom))
-            logger.debug(f'cropped rectangle: left:{left}, top:{top}, right:{right}, bottom:{bottom}')
+            #cropped_img = self.resized_pil.crop((left, top, right, bottom))
+            #logger.debug(f'cropped rectangle: left:{left}, top:{top}, right:{right}, bottom:{bottom}')
             
             # Send back to main app and close
-            self.callback(cropped_img)
+            self.callback((left, top, right, bottom), self.preview_pil, self.scale)
             self.destroy()

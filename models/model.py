@@ -5,6 +5,7 @@ JSON model for recipes
 '''
 from pydantic  import BaseModel, Field
 from typing import List, Optional, ClassVar
+import os
 import json
 import re
 from pathlib import Path
@@ -33,9 +34,10 @@ class ModelRecipe(BaseModel):
     description: Optional[str] = Field(description="Any longer description that is provided in the recipe")
     image_ref: Optional[str] = Field(default=None, alias="image ref", description="Optional link to an image of the dish")
 
-    def save_file(self, filepath: str, temp_img_path: str = None):
-        if temp_img_path:
-            self.copy_image(temp_img_path)
+    def save_file(self, filepath: str, new_image_path: str = None, image_pil: Image = None, old_image_path=None):
+        if new_image_path:
+            self.save_image(new_image_path, image_pil, old_image_path)
+        
         logger.info(f'saving to {filepath}')
         json_string: str = self.model_dump_json(by_alias=True, indent=4)
         with open(filepath, 'w', encoding='utf-8') as json_file:
@@ -61,7 +63,41 @@ class ModelRecipe(BaseModel):
         logger.info(f'destination parts are: {destination.parts}')
         relative_dest = str(Path(*destination.parts[-2:]))
         self.image_ref = relative_dest
-        logger.info(f'image_ref is: {relative_dest}')
+        logger.info(f'image_ref is: {self.image_ref}')
+
+    def save_image(self, image_path, image: Image, old_image_path):
+        original_file = Path(image_path)
+        stem = original_file.stem # basename without suffix
+        suffix = original_file.suffix
+        timestamp = int(time.time())
+        filename = f'{stem}_{timestamp}{suffix}'
+        destination = Path(self.image_dir, filename)
+        logger.info(f'destination file is: {destination}')
+        if destination.exists():
+            logger.error('A file with this name already exists! Cannot overwrite!')
+            return
+        logger.info(f'saving image {image_path} to destination {destination}')
+        image.save(destination)
+        logger.info(f'destination parts are: {destination.parts}')
+        relative_dest = str(Path(*destination.parts[-2:]))
+        self.image_ref = relative_dest
+        logger.info(f'image_ref is: {self.image_ref}')
+        if old_image_path:
+            self.delete_old_image(old_image_path)
+
+    def delete_old_image(self, old_image_path):
+        full_path = Path(ModelRecipe.PROJECT_ROOT, old_image_path)
+        try:
+            os.remove(full_path)
+            logger.info(f'deleted old image {full_path}, it has been replaced by a newer image')
+        except FileNotFoundError:
+            logger.error(f'could not find file to delete: {full_path}')
+        except PermissionError:
+            logger.error(f'Permission denied or file is in use: {full_path}')
+        except Exception as e:
+            logger.error(f'An error occured: {e}')
+
+
 
 
     @staticmethod
@@ -95,7 +131,7 @@ class ModelRecipe(BaseModel):
         ModelRecipe.snapshot = json_content
 
     @staticmethod
-    def get_image(relative_img_path):
+    def get_image(relative_img_path) -> Image:
         try:
             file_path = Path(ModelRecipe.PROJECT_ROOT, relative_img_path)
             return Image.open(file_path)

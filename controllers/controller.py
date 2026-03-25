@@ -60,8 +60,8 @@ class Controller:
 
         self.current_file = None
         self.has_new_image = False
-        self.temp_image_path = None
         self.current_image_path = None
+        self.new_image_path = None
         recents_list = ModelRecipe.recent_file_manager.recent_files
         self.view.init_recents_list(recents_list)
         snapshot: dict = self.build_json()
@@ -108,14 +108,23 @@ class Controller:
         else:
             json_data = self.build_json()
             recipe_model = ModelRecipe(**json_data)
-            recipe_model.save_file(self.current_file, self.temp_image_path)
+            logger.info(f'is there a new image: {self.has_new_image}')
+            if self.new_image_path:
+                # get the pil image object and save it
+                new_image = self.view.header_frame.original_pil
+                recipe_model.save_file(self.current_file, new_image_path= self.new_image_path, image_pil = new_image, old_image_path= self.current_image_path)
+            else:
+                recipe_model.save_file(self.current_file)
+
+            if recipe_model.image_ref:
+                self.current_image_path = recipe_model.image_ref
             
             self.view.status_bar.configure(text=f'Saved {self.get_basename(self.current_file)}   ')
             #ModelRecipe.set_snapshot(json_data)
             ModelRecipe.set_snapshot(recipe_model.model_dump(by_alias=True))
             if recipe_model.image_ref:
                 self.current_image_path = recipe_model.image_ref
-            self.set_temp_img_path(None) # image has been saved, reset
+            self.new_image_path = None # reset
             return True
 
             
@@ -132,7 +141,12 @@ class Controller:
         json_data = self.build_json()
         logger.debug(f'json data to save: {json_data}')
         recipe_model = ModelRecipe(**json_data)
-        recipe_model.save_file(file_path, self.temp_image_path)
+        if self.new_image_path:
+            # get the pil image object and save it
+            new_image = self.view.header_frame.original_pil
+            recipe_model.save_file(file_path, new_image_path= self.new_image_path, image_pil = new_image)
+        else:
+            recipe_model.save_file(file_path)
         if recipe_model.image_ref:
             self.current_image_path = recipe_model.image_ref
 
@@ -141,7 +155,7 @@ class Controller:
         self.view.status_bar.configure(text=f'Saved {self.get_basename(self.current_file)}   ')
         #ModelRecipe.set_snapshot(json_data)
         ModelRecipe.set_snapshot(recipe_model.model_dump(by_alias=True))
-        self.set_temp_img_path(None) # image has been saved, reset
+        self.new_image_path = None # image has been saved, reset
         return True
 
     def open_chat(self):
@@ -308,19 +322,7 @@ class Controller:
         logger.debug(f'last snapshot: {last_snapshot}')
         logger.debug(f'current snapshot: {current_snapshot}')
         return last_snapshot == current_snapshot
-    
-    def set_temp_img_path(self, img_path):
-        self.temp_image_path = img_path
-        logger.info(f'temp image path is: {img_path}, the image will not be copied and saved until the recipe is saved')
-
-    def mark_new_image(self):
-        self.has_new_image = True
-        logger.info('A new image has been uploaded')
-
-    def clear_new_image(self):
-        self.has_new_image = False
-        logger.info('the image is no longer new, it has been recorded')
-        
+            
     def export_to_mongo(self):
         result = messagebox.askyesno(title='Export to Database', message='Are you sure you want to add this Recipe to the database?')
         if not result:
