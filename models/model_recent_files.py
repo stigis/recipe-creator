@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 import re
+from platformdirs import PlatformDirs
+import constants
 import logging
 logger = logging.getLogger(__name__)
 
@@ -13,12 +15,16 @@ class RecentFileManager():
 
     def __init__(self):
         self.app_base = os.getenv('APPDATA')
-        self.app_directory = os.path.join(self.app_base, 'RecipeViewer')
+        #self.app_directory = os.path.join(self.app_base, 'RecipeViewer')
+        self.app_dirs = PlatformDirs(appname=constants.APP_NAME, appauthor=False, ensure_exists=True)
+        self.data_dir = self.app_dirs.user_data_dir
 
-        if not os.path.exists(self.app_directory):
-            os.makedirs(self.app_directory)
+        #logger.info(f'app dir for data is: {self.app_dirs.dat}')
+
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
         
-        self.recent_filepath = os.path.join(self.app_directory, 'opened_recently.json')
+        self.recent_filepath = os.path.join(self.data_dir, 'opened_recently.json')
         self.recent_files = self.load_recents()
 
     def load_recents(self):

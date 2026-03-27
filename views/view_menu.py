@@ -8,6 +8,12 @@ import customtkinter as ctk
 from tkinter import font
 from pathlib import Path
 
+import platform
+import subprocess
+import os
+from platformdirs import PlatformDirs
+import constants
+
 import logging
 logger = logging.getLogger()
 
@@ -53,6 +59,7 @@ class MenuBar(tk.Menu):
         file_menu = tk.Menu(self)
         file_menu.add_command(label='New')
         file_menu.add_command(label='Open', command= self.controller.open_file, accelerator='Ctrl + O')
+        file_menu.add_command(label='Open Image Folder', command= self.open_image_file_explorer)
         
 
         import_menu = tk.Menu(self)
@@ -142,4 +149,17 @@ class MenuBar(tk.Menu):
         if num_recents > max_recents:
             self.recents_menu.delete('end')
 
+    def open_image_file_explorer(self):
+        app_dir = PlatformDirs(appname=constants.APP_NAME, appauthor=False, ensure_exists=True)
+        img_path = app_dir.user_data_path / 'images'
+        path_string = str(img_path)
+        try:
+            if platform.system() == 'Windows':
+                os.startfile(path_string)
+            elif platform.system() == 'Darwin': # macos
+                subprocess.Popen(['open', path_string], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else: # Linux
+                subprocess.Popen(['xdg-open', path_string], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception as e:
+            logger.error(f'Failed to open file exlorer on images folder: {e}')
 

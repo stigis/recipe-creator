@@ -13,7 +13,9 @@ import sys
 import time
 import shutil
 from PIL import Image
+from platformdirs import PlatformDirs
 from models.model_recent_files import RecentFileManager
+import constants
 import logging
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,7 @@ class ModelRecipe(BaseModel):
     snapshot: ClassVar[dict] = None
     PROJECT_ROOT: ClassVar[Path] = None # set at the bottom of the file #Path(__file__).resolve().parent.parent #recipe_builder
     image_dir: ClassVar[Path] = None #PROJECT_ROOT / 'images' # recipe_builder/images
+    dirs: ClassVar[PlatformDirs] = None
     #image_dir.mkdir(exist_ok=True)
 
 
@@ -61,7 +64,7 @@ class ModelRecipe(BaseModel):
         logger.info(f'copying image {temp_image} to destination {destination}')
         shutil.copy2(temp_image, destination)
         logger.info(f'destination parts are: {destination.parts}')
-        relative_dest = str(Path(*destination.parts[-2:]))
+        relative_dest = str(Path(*destination.parts[-1:]))
         self.image_ref = relative_dest
         logger.info(f'image_ref is: {self.image_ref}')
 
@@ -79,14 +82,16 @@ class ModelRecipe(BaseModel):
         logger.info(f'saving image {image_path} to destination {destination}')
         image.save(destination)
         logger.info(f'destination parts are: {destination.parts}')
-        relative_dest = str(Path(*destination.parts[-2:]))
+        relative_dest = str(Path(*destination.parts[-1:]))
         self.image_ref = relative_dest
         logger.info(f'image_ref is: {self.image_ref}')
         if old_image_path:
             self.delete_old_image(old_image_path)
 
     def delete_old_image(self, old_image_path):
-        full_path = Path(ModelRecipe.PROJECT_ROOT, old_image_path)
+        # TODO replace with platformdirs image directory
+        #full_path = Path(ModelRecipe.PROJECT_ROOT, old_image_path)
+        full_path = ModelRecipe.image_dir / old_image_path
         try:
             os.remove(full_path)
             logger.info(f'deleted old image {full_path}, it has been replaced by a newer image')
@@ -96,8 +101,6 @@ class ModelRecipe(BaseModel):
             logger.error(f'Permission denied or file is in use: {full_path}')
         except Exception as e:
             logger.error(f'An error occured: {e}')
-
-
 
 
     @staticmethod
@@ -133,7 +136,8 @@ class ModelRecipe(BaseModel):
     @staticmethod
     def get_image(relative_img_path) -> Image:
         try:
-            file_path = Path(ModelRecipe.PROJECT_ROOT, relative_img_path)
+            #file_path = Path(ModelRecipe.PROJECT_ROOT, relative_img_path)
+            file_path = ModelRecipe.image_dir / relative_img_path
             return Image.open(file_path)
         except FileNotFoundError as e:
             logger.error(f' image file not found: {file_path}')
@@ -152,7 +156,9 @@ class ModelRecipe(BaseModel):
             ModelRecipe.PROJECT_ROOT = Path(__file__).resolve().parent.parent
         
         # init images folder for models
-        ModelRecipe.image_dir = ModelRecipe.PROJECT_ROOT / 'images'
+        ModelRecipe.dirs = PlatformDirs(appname=constants.APP_NAME, appauthor=False)
+       # ModelRecipe.image_dir = ModelRecipe.PROJECT_ROOT / 'images'
+        ModelRecipe.image_dir = ModelRecipe.dirs.user_data_path / 'images'
         ModelRecipe.image_dir.mkdir(exist_ok=True)
         logger.info(f'PROJECT ROOT is: {ModelRecipe.PROJECT_ROOT}')
         logger.info(f'image directory is: {ModelRecipe.image_dir}')

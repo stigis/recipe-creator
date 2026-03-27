@@ -108,7 +108,7 @@ class Controller:
         else:
             json_data = self.build_json()
             recipe_model = ModelRecipe(**json_data)
-            logger.info(f'is there a new image: {self.has_new_image}')
+            logger.info(f'is there a new image: {self.new_image_path != None and self.new_image_path != ''}')
             if self.new_image_path:
                 # get the pil image object and save it
                 new_image = self.view.header_frame.original_pil

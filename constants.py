@@ -5,6 +5,8 @@ Docstring for img_recipe_extractor.gui.v3.constants
 from enum import Enum
 import customtkinter as ctk
 
+APP_NAME = 'RecipeViewer'
+
 class Color(Enum):
     BEIGE = '#F5F5DC'
     CREAM = '#FFFDD0'

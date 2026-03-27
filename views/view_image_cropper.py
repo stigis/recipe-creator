@@ -18,43 +18,16 @@ class ImageCropper(ctk.CTkToplevel):
         self.resized_image = None
         self.scale = 0
         
-        
-        # Load the original image
-        #self.original_image = ctk_image
-        #self.original_image = ImageTk.PhotoImage(self.original_image)
-        # In your Toplevel __init__
-        #self.focus()
-        #self.lift()
-        #self.attributes("-topmost", True)    # Force to absolute top
-        #self.after(10, lambda: self.attributes("-topmost", False)) # Unpin immediately
-        #self.after(20, utils.zoom_window, self)
-        #self.after(1000, self.delayed_setup)
-        #self.after(1000, self.fit_image) # resize image
-        #self.grab_set()
-        #self.after(5000, self.grab_release)
-
-        #self.after(1000, utils.zoom_window, self)
-        #self.geometry()
+        # Create the canvas now, but the image will only be added later
+        # in a callback that executes after the toplevel has been fully created, zoomed, and the canvas expanded
         self.canvas = tk.Canvas(self, bg=constants.Color.CREAM.value)
         self.canvas.pack(fill='both', expand=True)
 
-
-        #self.canvas.create_image(0, 0, anchor='nw', image=  self.tk_image)
-
-
-        #
         # Selection variables
         self.rect_id = None
         self.start_x = None
         self.start_y = None
         self.selection_coords = None
-#
-        # # Setup Canvas
-        #self.canvas = ctk.CTkCanvas(self, width=self.original_image.width, 
-        #                           height=self.original_image.height,
-        #                           highlightthickness=0)
-        #self.canvas.pack()
-        #self.canvas.create_image(0, 0, anchor="nw", image=self.original_image)
 
         ## Bindings
         self.canvas.bind("<ButtonPress-1>", self.on_press)
@@ -80,26 +53,6 @@ class ImageCropper(ctk.CTkToplevel):
         self.focus_set()
         utils.zoom_window(self)
         self.after_idle(self.fit_image)
-
-    def delayed_setup(self):
-        original_width, original_height = self.pil_image.size
-        self.update()
-        frame_width = self.canvas.winfo_width()
-        logger.debug(f'canvas width is: {frame_width}')
-        if original_width > frame_width:
-            logger.info(f'Scaling image. Image width is {original_width}, but frame width is {frame_width}')
-            # Will always be a fraction < 1, because the image's width (original width) is bigger
-            # Ex: If the image is twice as wide as the frame, the ratio will be 0.5, and the image's width will be halved, allowing it to fit in the frame
-            ratio = frame_width / original_width 
-            original_width = original_width * ratio
-            original_height = original_width * ratio
-        self.resized_image: Image = self.pil_image.resize((int(original_width), int(original_height)), Image.LANCZOS)
-        #tk_img = ImageTk.PhotoImage(resized_img)
-        #scaling = ctk.ScalingTracker.get_widget_scaling(self)
-        logger.debug(f'img_frame width is {self.canvas.winfo_width()}')
-        logger.debug(f'img_frame height is {self.canvas.winfo_reqheight()}')
-        #ctk_img = ctk.CTkImage(resized, size=(resized.width // scaling, resized.height // scaling))
-        self.tk_image = ImageTk.PhotoImage(self.resized_image)
 
     def fit_image(self):
         self.update()
@@ -134,9 +87,8 @@ class ImageCropper(ctk.CTkToplevel):
         # Reset/Start new rectangle
         self.start_x = event.x
         self.start_y = event.y
-        # TODO only create/delete rectangle if event coordinates are within the image boundary
-        #img_bbox = self.canvas.bbox(self.image_id)
-        #click_in_image = (event.x >= img_bbox[0] and event.x <= img_bbox[2]) and (event.y >= img_bbox[1] and event.y <= img_bbox[3])
+
+        # only create/delete rectangle if event coordinates are within the image boundary
         click_in_image = self.is_inside_image(event.x, event.y)
         if not click_in_image:
             return
@@ -145,9 +97,7 @@ class ImageCropper(ctk.CTkToplevel):
         self.rect_id = self.canvas.create_rectangle(self.start_x, self.start_y, 1, 1, outline='red', width=2)
 
     def on_drag(self, event):
-        # TODO only create/delete rectangle if event coordinates are within the image boundary
-        #img_bbox = self.canvas.bbox(self.image_id)
-        #drag_in_image = (event.x >= img_bbox[0] and event.x <= img_bbox[2]) and (event.y >= img_bbox[1] and event.y <= img_bbox[3])
+        # only create/delete rectangle if event coordinates are within the image boundary
         drag_in_image = self.is_inside_image(event.x, event.y)
         if not drag_in_image:
             return
@@ -185,12 +135,9 @@ class ImageCropper(ctk.CTkToplevel):
             right = right - top_left_x
             top = top - top_left_y
             bottom = bottom - top_left_y
-            
-            # Crop the PIL image
-            #cropped_img = self.resized_pil.crop((left, top, right, bottom))
-            #logger.debug(f'cropped rectangle: left:{left}, top:{top}, right:{right}, bottom:{bottom}')
-            
+                        
             # Send back to main app and close
+            # The main app will perform calculations to scale the coordinates on the resized image to the original image
             self.callback((left, top, right, bottom), self.preview_pil, self.scale)
             self.destroy()
 
