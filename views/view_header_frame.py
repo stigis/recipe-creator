@@ -138,7 +138,6 @@ class HeaderFrame(ctk.CTkFrame):
             return
 
         self.original_pil = Image.open(img_file)
-        #self.create_resized_img()
         #ctk_image = self.display_image(self.original_pil)
         self.controller.new_image_path = img_file
         self.update()
@@ -153,24 +152,6 @@ class HeaderFrame(ctk.CTkFrame):
         self.controller.new_image_path = 'image_from_clipboard.jpg'
         logger.info('pasted image from clipboard into gui')
         self.set_image(img)
-
-
-    # creates a PIL scaled to fit within the screen/gui
-    def create_resized_img(self):
-        self.update()
-        if not self.original_pil:
-            return
-        
-        logger.debug(f'image original size is: {self.original_pil.size}')
-        orig_w, orig_h = self.original_pil.size
-        frame_width = self.img_frame.winfo_width()
-        ratio = frame_width / self.original_pil.width
-        new_width = int(orig_w * ratio)
-        new_height = int(orig_h * ratio)
-        self.preview_pil = self.original_pil.resize(size=(new_width, new_height))
-        logger.debug(f'scaling ratio is: {ratio}')
-        logger.debug(f'the scaled size is: {self.preview_pil.size}')
-
     
     # displays the image pil stored in self.original_pil
     # before displaying, it resizes the pil to fit the frame's width and screen height,
@@ -269,6 +250,15 @@ class HeaderFrame(ctk.CTkFrame):
     def show_img_error(self):
         messagebox.showerror(title='Image Error', message='The image of the dish could not be loaded. See logs for more details')
 
+    # called when a file is opened and values are loaded to the entry fields.
+    # resizes the entry fields to fit the length of the text
+    def init_entries(self):
+        logger.info('manually triggering entry resize events...')
+        self.time_value.focus()
+        self.time_value.event_generate('<KeyRelease>')
+        self.serve_value.focus()
+        self.serve_value.event_generate('<KeyRelease>')
+    
     def disable(self):        
         self.title_entry.configure(state='disabled')
         self.time_value.configure(state='disabled')

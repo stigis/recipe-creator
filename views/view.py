@@ -163,6 +163,7 @@ class View(ctk.CTk):
             self.header_frame.remove_image()
         
         self.update()
+        self.header_frame.init_entries()
         self.update_widgets(self)
 
         if mode == 'View':

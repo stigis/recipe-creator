@@ -1,4 +1,4 @@
 @echo off
 REM starts the gui, v3
-REM python .\controller.py
+CALL .\venv\Scripts\activate
 python .\main.py
