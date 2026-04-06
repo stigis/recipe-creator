@@ -9,6 +9,7 @@ build/*
 dist/*
 venv
 *.spec
+database.py
 adam.py
 
 # Do NOT ignore the .gitkeep file

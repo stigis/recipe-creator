@@ -51,7 +51,6 @@ class MenuBar(tk.Menu):
         self.add_cascade(label='Mode', menu= self.mode_menu)
         #self.add_cascade(label='Chat', menu=)
         self.add_command(label='Chat', command= self.controller.open_chat)
-        self.add_command(label='Export', command= self.controller.export_to_mongo)
         self.add_cascade(label='API Key', menu= self.api_key_menu)
         self.add_cascade(label='AI', menu= self.ai_menu)
 
