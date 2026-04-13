@@ -29,3 +29,6 @@ class DescriptionFrame(ttk.Frame):
     def set_description(self, new_description):
         self.description_text.delete('1.0', 'end')
         self.description_text.insert('end', new_description)
+    
+    def clear_description(self):
+        self.description_text.delete('1.0', 'end')

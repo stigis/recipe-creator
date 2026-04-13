@@ -250,6 +250,12 @@ class HeaderFrame(ctk.CTkFrame):
     def show_img_error(self):
         messagebox.showerror(title='Image Error', message='The image of the dish could not be loaded. See logs for more details')
 
+    def clear(self):
+        self.title_entry.delete('0', 'end')
+        self.time_value.delete('0', 'end')
+        self.serve_value.delete('0', 'end')
+        self.remove_image()
+    
     # called when a file is opened and values are loaded to the entry fields.
     # resizes the entry fields to fit the length of the text
     def init_entries(self):

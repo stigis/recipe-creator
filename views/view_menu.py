@@ -56,7 +56,7 @@ class MenuBar(tk.Menu):
 
     def _make_file_menu(self):
         file_menu = tk.Menu(self)
-        file_menu.add_command(label='New')
+        file_menu.add_command(label='New / Clear', command= self.controller.clear_json)
         file_menu.add_command(label='Open', command= self.controller.open_file, accelerator='Ctrl + O')
         file_menu.add_command(label='Open Image Folder', command= self.open_image_file_explorer)
         

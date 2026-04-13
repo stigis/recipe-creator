@@ -28,23 +28,25 @@ logger = logging.getLogger(__name__)
 if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
     # running from a bundle in pyinstaller
     ROOT_DIR = Path(sys._MEIPASS).resolve().parent
+    PROGRAMS_DIR = ROOT_DIR
 else:
     # running locally in python script
     # this gives the programs directory
-    ROOT_DIR = Path(__file__).resolve().parent.parent / 'programs'
+    ROOT_DIR = Path(__file__).resolve().parent.parent
+    PROGRAMS_DIR = ROOT_DIR / 'programs'
 
 #CURRENT_DIR = os.path.dirname(os.path.abspath(__file__)) # the directory containing this file
 # get the parent directory that contains this file
 #PARENT_DIR = os.path.dirname(CURRENT_DIR)
 #PROGRAMS_DIR = ROOT_DIR / 'programs' #os.path.join(PARENT_DIR, "programs")
 #WEBSITE_PROCCESING_SCRIPT = PROGRAMS_DIR / 'extract_recipe_from_website.py' #os.path.join(PROGRAMS_DIR, "extract_recipe_from_website.py")
-WEBSITE_OUTPUT_DIR = ROOT_DIR / 'output' / 'website'
-WEBSITE_JSON_OUTPUT_NAME =  ROOT_DIR / 'output' / 'website' / 'gemma_output.json' #os.path.join(PROGRAMS_DIR, "output", "website", "gemma_output.json")
+WEBSITE_OUTPUT_DIR = PROGRAMS_DIR / 'output' / 'website'
+WEBSITE_JSON_OUTPUT_NAME =  PROGRAMS_DIR / 'output' / 'website' / 'gemma_output.json' #os.path.join(PROGRAMS_DIR, "output", "website", "gemma_output.json")
 WEBSITE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 #IMG_PROCESSING_SCRIPT = PROGRAMS_DIR / 'img_recipe_extractor.py' #os.path.join(PROGRAMS_DIR, "img_recipe_extractor.py")
-IMG_OUTPUT_DIR = ROOT_DIR / 'output' / 'img' #os.path.join(PROGRAMS_DIR, "output", "img")
-IMG_JSON_OUTPUT_NAME = ROOT_DIR / 'output' / 'img' / 'output_filename.txt' #os.path.join(PROGRAMS_DIR, "output", "img", "output_filename.txt") 
+IMG_OUTPUT_DIR = PROGRAMS_DIR / 'output' / 'img' #os.path.join(PROGRAMS_DIR, "output", "img")
+IMG_JSON_OUTPUT_NAME = PROGRAMS_DIR / 'output' / 'img' / 'output_filename.txt' #os.path.join(PROGRAMS_DIR, "output", "img", "output_filename.txt") 
 IMG_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 class Controller:
@@ -157,6 +159,29 @@ class Controller:
         ModelRecipe.set_snapshot(recipe_model.model_dump(by_alias=True))
         self.new_image_path = None # image has been saved, reset
         return True
+    
+    def clear_json(self):
+        '''Clears all data loaded into the Gui to start a new recipe'''
+        #are_snapshots_identical = self.compare_to_snapshot()
+        #if not are_snapshots_identical:
+        #    response = messagebox.askyesnocancel(title='Clear', message='Would you like to save your changes before clearing?')
+        #    if response == None:
+        #        return # cancel operation
+        #    elif response == True: # user wants to save
+        #        saved = self.save()
+        #        if not saved:
+        #            return
+        #    # if response is false, user does not want to sae, continue operation
+        proceed = self.check_save_prompt(message='Would you like to save your changes before Clearing')
+        if not proceed:
+            return
+        logger.info('Clearing content from the gui')
+        self.view.clear_json()
+        self.current_file = None
+        self.current_image_path = None
+        self.new_image_path = None
+        new_snapshot = self.build_json()
+        ModelRecipe.set_snapshot(new_snapshot)
 
     def open_chat(self):
         logger.info('ran open_chat()')
@@ -286,9 +311,6 @@ class Controller:
         # TODO view.load_json(recipeJson, filepath)
         self.view.load_json(recipe_json, image=image, image_error=image_error, filepath=filepath, max_recents=ModelRecipe.recent_file_manager.MAX)
 
-
-
-
     def build_json(self):
         '''
             builds a JSON object from the contents of the view Gui
@@ -322,20 +344,26 @@ class Controller:
         logger.debug(f'last snapshot: {last_snapshot}')
         logger.debug(f'current snapshot: {current_snapshot}')
         return last_snapshot == current_snapshot
-            
-    def export_to_mongo(self):
-        result = messagebox.askyesno(title='Export to Database', message='Are you sure you want to add this Recipe to the database?')
-        if not result:
-            return
-        payload = self.build_json()
-        response = requests.post('http://localhost:5000/api/data', json= payload)
-        logger.info(f'status is: {response.status_code}')
-        logger.debug(response)
-        if response.status_code == 409:
-            override = messagebox.askretrycancel(title='Override existing recipe', message='A recipe with this name already exists in the database. Would you like to override it?')
-            if override:
-                response = requests.put('http://localhost:5000/api/data', json= payload)
     
+    def check_save_prompt(self, message):
+        """Checks if the current snapshot is identical to the previous one, and provides a prompt if it's not
+        Returns True if the user has saved, or allowed the program to continue without saving.
+        Returns False if the user does not want to continue the operation"""
+        are_snapshots_identical = self.compare_to_snapshot()
+        if are_snapshots_identical:
+            return True
+        
+        response = messagebox.askyesnocancel(message= message)
+        if response == True: # perform a save operation
+            saved = self.save()
+            return saved
+        elif response == False: # user does not care about saving and wants to proceed
+            return True
+        else:
+            return False # when user clicks 'Cancel', response == None
+
+
+                
     # update all widgets to perform any necessary resizing, ect...
     def _update_visibility(self):
         self.view.update()

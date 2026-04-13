@@ -125,6 +125,15 @@ class DirectionsFrame(ctk.CTkFrame):
         for i, step in enumerate(new_directions):
             self._add_direction(index= i, content= step)
 
+    def clear_directions(self):
+        for sub_frame in self.directions_container.winfo_children():
+            sub_frame.destroy()
+        self.direction_list.clear()
+
+        for i in range(3):
+            self._add_direction(index=i, content= f'Step #{i}')
+
+
     def disable_directions(self):
         for record in self.direction_list:
             direction: utils.AutoSizingTextbox = record['direction']

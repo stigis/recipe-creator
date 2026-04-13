@@ -6,6 +6,7 @@ Creates a Tkinter GUI for viewing and editing JSON files containing a recipe
 
 import tkinter as tk
 import customtkinter as ctk
+import sys
 from tkinter import ttk
 from tkinter import messagebox
 from views.view_menu import MenuBar
@@ -29,6 +30,8 @@ class View(ctk.CTk):
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
+        theme_path_str = str(self._get_theme_path())
+        ctk.set_default_color_theme(theme_path_str)
         self.title('Recipe Viewer')
         self.geometry('500x500+300+100')
         self.chat_window = None
@@ -60,6 +63,15 @@ class View(ctk.CTk):
         self.update()
         logger.info(f'screen width: {self.winfo_screenwidth()}, screen height: {self.winfo_screenheight()}')
         logger.info(f'root width (scaled) is {self.winfo_width()}, root height (scaled) is: {self.winfo_height()}')
+
+    def _get_theme_path(self):
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            # runnning from a bundle in pyinstaller
+            return Path(sys._MEIPASS).resolve() / 'config' / 'theme.json'
+        else:
+            # running from a python script
+            project_root = Path(__file__).resolve().parent.parent
+            return project_root / 'config' / 'theme.json'
 
     def _make_menu_bar(self):
         self.option_add('*tearOff', False)
@@ -168,6 +180,26 @@ class View(ctk.CTk):
 
         if mode == 'View':
             self.switch_to_view()
+
+    def clear_json(self):
+        mode = self.menu_bar.get_mode().get()
+        logger.info(f'mode is: {mode}')
+        if mode == 'View':
+            self.switch_to_edit()
+
+
+        self.header_frame.clear()
+        self.ingredients_frame.clear_ingredients()
+        self.directions_frame.clear_directions()
+        self.description_frame.clear_description()
+        self.status_bar.configure(text='Ready   ')
+
+        self.update()
+        self.update_widgets(self)
+
+        if mode == 'View':
+            self.switch_to_view()
+
 
     def on_close(self):
         are_snapshots_identical = self.controller.compare_to_snapshot()

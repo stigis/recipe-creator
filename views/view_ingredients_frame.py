@@ -219,6 +219,18 @@ class IngredientsFrame(ctk.CTkFrame):
         for i, ingredient in enumerate(new_ingredients):
             self._add_ingredient(content=ingredient)
 
+    def clear_ingredients(self):
+        current_node = self.linked_list.head
+        while current_node:
+            next_node = current_node.next
+            self.linked_list.remove_node(current_node)
+            current_node.data['sub_frame'].destroy()
+            current_node = next_node
+        
+        for i in range(3):
+            self._add_ingredient(content = f'Ingredient #{i}', use_placeholder=True)
+
+
     def disable_ingredients(self):
         current_node = self.linked_list.head
         while current_node:
